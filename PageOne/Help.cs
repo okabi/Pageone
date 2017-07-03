@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using PageOne.Models;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace PageOne
 {
@@ -12,7 +14,8 @@ namespace PageOne
         /// <summary>
         /// ヘルプのトップ画面です。
         /// </summary>
-        public static void Top()
+        /// <param name="cards">選択肢と手札の辞書。</param>
+        public static void Top(Dictionary<int, Card> cards)
         {
             while (true)
             {
@@ -27,7 +30,7 @@ namespace PageOne
                 }
                 else if (input == 2)
                 {
-
+                    CardSelect(cards);
                 }
                 else
                 {
@@ -36,10 +39,14 @@ namespace PageOne
             }
         }
 
+        #endregion
+
+        #region private 関数
+
         /// <summary>
         /// ゲームルールに関するヘルプ画面です。
         /// </summary>
-        public static void Rule()
+        private static void Rule()
         {
             int maxPage = 19;
             for (int i = 0; i < maxPage;)
@@ -172,9 +179,32 @@ namespace PageOne
             }
         }
 
-        #endregion
-
-        #region private 関数
+        /// <summary>
+        /// 手札の選択画面です。
+        /// </summary>
+        /// <param name="cards">選択肢と手札の辞書。</param>
+        private static void CardSelect(Dictionary<int, Card> cards)
+        {
+            while (true)
+            {
+                var option = new Dictionary<int, string>(
+                    cards.ToDictionary(x => x.Key, x => x.Value.ToString()));
+                option.Add(99, "トップに戻る");
+                int input = Utility.ReadNumber("手札のカード効果ヘルプ", option);
+                if (input == 99)
+                {
+                    break;
+                }
+                else
+                {
+                    var number = cards[input].Number == null ? 14 : cards[input].Number.Value;
+                    var message = CardEffect(number) + "\nEnter で戻ります。\n";
+                    var descriptionOption = new Dictionary<int, string>();
+                    descriptionOption.Add(99, "戻る");
+                    Utility.ReadNumber(message, descriptionOption, 99);
+                }
+            }
+        }
 
         /// <summary>
         /// カードの効果のヘルプを返します。

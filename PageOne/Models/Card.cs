@@ -97,11 +97,11 @@ namespace PageOne.Models
             if (Suit != SuitType.Joker)
             {
                 ret +=
-                    Number == 1 ? "A  " :
-                    Number == 11 ? "J  " :
-                    Number == 12 ? "Q  " :
-                    Number == 13 ? "K  " :
-                    $"{Number, -3}";
+                    Number == 1 ? "A" :
+                    Number == 11 ? "J" :
+                    Number == 12 ? "Q" :
+                    Number == 13 ? "K" :
+                    $"{Number}";
             }
             if (Opened)
             {

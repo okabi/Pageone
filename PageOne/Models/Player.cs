@@ -30,17 +30,17 @@ namespace PageOne.Models
         {
             get
             {
-                return $"{Name}: " + string.Join(" ", cards);
+                return $"{Name}: " + string.Join(" ", cards.Select(x => $"{x, 5}"));
             }
         }
 
         /// <summary>手札の選択肢を表す辞書。</summary>
-        public Dictionary<int, string> Option
+        public Dictionary<int, Card> Option
         {
             get
             {
                 return cards
-                    .Select((x, i) => new { Item = x.ToString(), Index = i + 1 })
+                    .Select((x, i) => new { Item = x, Index = i + 1 })
                     .ToDictionary(x => x.Index, x => x.Item);
             }
         }
@@ -100,7 +100,8 @@ namespace PageOne.Models
             {
                 Console.WriteLine(GameMaster.Instance.Status + "\n");
 
-                var option = new Dictionary<int, string>(Option);
+                var option = new Dictionary<int, string>(
+                    Option.ToDictionary(x => x.Key, x => x.Value.ToString()));
                 option.Add(88, drawable ? "カードを引く" : "パスする");
                 option.Add(99, "ヘルプ");
                 int input = Utility.ReadNumber(
@@ -120,7 +121,7 @@ namespace PageOne.Models
                 }
                 else if (input == 99)
                 {
-                    Help.Top();
+                    Help.Top(Option);
                 }
                 else
                 {
