@@ -11,14 +11,18 @@ namespace PageOne
         /// <param name="args">コマンドライン引数。</param>
         static void Main(string[] args)
         {
-            Init();
+            // 初期設定
+            var names = Init();
 
+            // ゲームの開始
+            GameMaster.Instance.Start(names);
         }
 
         /// <summary>
         /// ゲームの初期設定です。
         /// </summary>
-        static void Init()
+        /// <returns>設定されたプレイヤー名のリスト。</returns>
+        static List<string> Init()
         {
             // プレイヤーの設定
             int playerNum;
@@ -47,15 +51,7 @@ namespace PageOne
                 names.Add(Console.ReadLine());
             }
 
-            // ゲームマスターの初期化
-            GameMaster.Instance.Init(names);
-            Console.WriteLine();
-
-            // ゲームループ
-            while (true)
-            {
-                GameMaster.Instance.Next();
-            }
+            return names;
         }
     }
 }

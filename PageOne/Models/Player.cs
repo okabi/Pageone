@@ -1,6 +1,6 @@
 ﻿using PageOne.Interfaces;
-using System.Collections.Generic;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace PageOne.Models
@@ -30,9 +30,7 @@ namespace PageOne.Models
         {
             get
             {
-                var ret = $"{Name}: ";
-                ret += string.Join(" ", cards.Select(x => x.ToString()));
-                return ret;
+                return $"{Name}: " + string.Join(" ", cards);
             }
         }
 
@@ -41,12 +39,9 @@ namespace PageOne.Models
         {
             get
             {
-                var ret = new Dictionary<int, string>();
-                for (int i = 0; i < cards.Count; i++)
-                {
-                    ret.Add(i + 1, cards[i].ToString());
-                }
-                return ret;
+                return cards
+                    .Select((x, i) => new { Item = x.ToString(), Index = i + 1 })
+                    .ToDictionary(x => x.Index, x => x.Item);
             }
         }
 
@@ -88,6 +83,7 @@ namespace PageOne.Models
                 throw new Exception("手札の指定インデックスが不正です。" +
                     $"{cards.Count}枚に対して{index}が指定されています。");
             }
+            GameMaster.Instance.Discard(cards[index]);
             cards.RemoveAt(index);
         }
 
@@ -105,17 +101,22 @@ namespace PageOne.Models
                 Console.WriteLine(GameMaster.Instance.Status + "\n");
 
                 var option = new Dictionary<int, string>(Option);
-                if (drawable)
-                {
-                    option.Add(88, "カードを引く");
-                }
+                option.Add(88, drawable ? "カードを引く" : "パスする");
                 option.Add(99, "ヘルプ");
                 int input = Utility.ReadNumber(
                     $"{Name} のターン\n出すカード または その他の行動を選択してください。", option);
+
                 if (input == 88)
                 {
-                    AddCard(GameMaster.Instance.Draw());
-                    drawable = false;
+                    if (drawable)
+                    {
+                        AddCard(GameMaster.Instance.Draw());
+                        drawable = false;
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
                 else if (input == 99)
                 {

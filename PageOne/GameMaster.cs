@@ -59,9 +59,9 @@ namespace PageOne
         {
             get
             {
-                var ret = $"{Turn} ターン目  山札: {deck.Count} 枚\n";
-                ret += string.Join("\n", players.Select(x => x.Status));
-                return ret;
+                return $"{Turn} ターン目  山札: {deck.Count} 枚\n" +
+                    $"捨て札の一番上は {TopOfGrave} です。\n\n" +
+                    string.Join("\n", players.Select(x => x.Status));
             }
         }
 
@@ -70,10 +70,10 @@ namespace PageOne
         #region public メソッド
 
         /// <summary>
-        /// ゲームを初期化します。操作プレイヤーは1Pだと想定します。
+        /// ゲームを初期化して開始します。操作プレイヤーは1Pだと想定します。
         /// </summary>
         /// <param name="names">参加プレイヤー名のリスト。</param>
-        public void Init(List<string> names)
+        public void Start(List<string> names)
         {
             // 変数の初期化
             Turn = 0;
@@ -121,22 +121,18 @@ namespace PageOne
                     player.AddCard(Draw());
                 }
             }
-        }
 
-        /// <summary>
-        /// 1ターン進めます。
-        /// </summary>
-        public void Next()
-        {
-            Turn++;
-            Console.Clear();
-            players[(Turn - 1) % players.Count].Next();
+            // ゲームループ
+            while (true)
+            {
+                Next();
+            }
         }
 
         /// <summary>
         /// 山札からカードを1枚引きます。
         /// </summary>
-        /// <returns></returns>
+        /// <returns>引いたカード。</returns>
         public Card Draw()
         {
             if (deck.Count == 0)
@@ -153,9 +149,28 @@ namespace PageOne
             return deck.Pop();
         }
 
+        /// <summary>
+        /// 指定したカードを捨て札にします。
+        /// </summary>
+        /// <param name="card">捨て札にするカード。</param>
+        public void Discard(Card card)
+        {
+            grave.Push(card);
+        }
+
         #endregion
 
         #region private メソッド
+
+        /// <summary>
+        /// 1ターン進めます。
+        /// </summary>
+        private void Next()
+        {
+            Turn++;
+            Console.Clear();
+            players[(Turn - 1) % players.Count].Next();
+        }
 
         /// <summary>
         /// 山札をシャッフルします。
