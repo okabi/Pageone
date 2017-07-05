@@ -102,12 +102,12 @@ namespace PageOne
             {
                 if (i == 0)
                 {
-                    players.Add(new ControllablePlayer(names[i]));
+                    players.Add(new PlayerHuman(names[i]));
                 }
                 else
                 {
                     // テスト用
-                    players.Add(new ControllablePlayer(names[i]));
+                    players.Add(new PlayerHuman(names[i]));
                 }
             }
 

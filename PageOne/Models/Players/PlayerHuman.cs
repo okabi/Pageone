@@ -7,7 +7,7 @@ namespace PageOne.Models.Players
     /// <summary>
     /// 操作するプレイヤーです。
     /// </summary>
-    public class ControllablePlayer : Player
+    public class PlayerHuman : Player
     {
         #region コンストラクタ
 
@@ -15,7 +15,7 @@ namespace PageOne.Models.Players
         /// 操作するプレイヤーを作成します。
         /// </summary>
         /// <param name="name">プレイヤー名。</param>
-        public ControllablePlayer(string name) : base(name) { }
+        public PlayerHuman(string name) : base(name) { }
 
         #endregion
 
