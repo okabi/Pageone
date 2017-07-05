@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace PageOne.Models
 {
     /// <summary>
-    /// トランプカードを表すクラスです。
+    /// トランプカードを表す抽象クラスです。
     /// </summary>
-    public class Card
+    public abstract class Card
     {
         #region 定数
 
@@ -21,7 +22,7 @@ namespace PageOne.Models
             /// <summary>ハート。</summary>
             Heart,
             /// <summary>ジョーカー。</summary>
-            Joker,
+            Joker
         }
 
         #endregion
@@ -44,7 +45,7 @@ namespace PageOne.Models
             get { return suit; }
         }
 
-        /// <summary>ジョーカーを出した時の、宣言スート(マーク)。</summary>
+        /// <summary>捨て札時に宣言されているスート(マーク)。</summary>
         public SuitType declaredSuit { get; set; }
 
         /// <summary>数字。</summary>
@@ -109,6 +110,16 @@ namespace PageOne.Models
             }
             return ret;
         }
+
+        #endregion
+
+        #region 仮想 public メソッド
+
+        /// <summary>
+        /// カード効果を発動します。
+        /// ゲームマスターから呼ばれる仮想メソッドです。
+        /// </summary>
+        public virtual void Effect() { }
 
         #endregion
     }

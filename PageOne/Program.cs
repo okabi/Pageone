@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace PageOne
 {
+    /// <summary>
+    /// メインエントリポイントとなるクラスです。
+    /// </summary>
     class Program
     {
         /// <summary>

@@ -43,11 +43,25 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Interfaces\IPlayer.cs" />
+    <Compile Include="Models\Cards\Card13.cs" />
+    <Compile Include="Models\Cards\Card12.cs" />
+    <Compile Include="Models\Cards\Card11.cs" />
+    <Compile Include="Models\Cards\Card10.cs" />
+    <Compile Include="Models\Cards\Card9.cs" />
+    <Compile Include="Models\Cards\Card8.cs" />
+    <Compile Include="Models\Cards\Card7.cs" />
+    <Compile Include="Models\Cards\Card6.cs" />
+    <Compile Include="Models\Cards\Card5.cs" />
+    <Compile Include="Models\Cards\Card4.cs" />
+    <Compile Include="Models\Cards\Card3.cs" />
+    <Compile Include="Models\Cards\Card2.cs" />
+    <Compile Include="Models\Cards\Card1.cs" />
+    <Compile Include="Models\Cards\CardJoker.cs" />
+    <Compile Include="Models\Player.cs" />
     <Compile Include="Models\Card.cs" />
     <Compile Include="GameMaster.cs" />
     <Compile Include="Help.cs" />
-    <Compile Include="Models\Player.cs" />
+    <Compile Include="Models\Players\ControllablePlayer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Utility.cs" />
@@ -55,6 +69,7 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

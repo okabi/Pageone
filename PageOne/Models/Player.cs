@@ -1,22 +1,18 @@
-﻿using PageOne.Interfaces;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace PageOne.Models
 {
     /// <summary>
-    /// 操作するプレイヤーです。
+    /// 一人のプレイヤーを表す抽象クラスです。
     /// </summary>
-    public class Player : IPlayer
+    public abstract class Player
     {
         #region フィールド
 
         /// <summary>手札。</summary>
         private List<Card> cards;
-
-        /// <summary>カードを1枚引ける状態か。</summary>
-        private bool drawable;
 
         #endregion
 
@@ -30,7 +26,7 @@ namespace PageOne.Models
         {
             get
             {
-                return $"{Name}: " + string.Join(" ", cards.Select(x => $"{x, 5}"));
+                return $"{Name}: " + string.Join(" ", cards.Select(x => $"{x,5}"));
             }
         }
 
@@ -44,6 +40,9 @@ namespace PageOne.Models
                     .ToDictionary(x => x.Index, x => x.Item);
             }
         }
+
+        /// <summary>カードを1枚引ける状態か。</summary>
+        public bool Drawable { get; protected set; }
 
         #endregion
 
@@ -87,48 +86,15 @@ namespace PageOne.Models
             cards.RemoveAt(index);
         }
 
+        #endregion
+
+        #region 仮想 public メソッド
+
         /// <summary>
         /// 自分のターンを処理し、次のターンに移します。
+        /// ゲームマスターから呼ばれる仮想メソッドです。
         /// </summary>
-        public void Next()
-        {
-            // ターンの開始処理
-            drawable = true;
-
-            // ターンの処理
-            while (true)
-            {
-                Console.WriteLine(GameMaster.Instance.Status + "\n");
-
-                var option = new Dictionary<int, string>(
-                    Option.ToDictionary(x => x.Key, x => x.Value.ToString()));
-                option.Add(88, drawable ? "カードを引く" : "パスする");
-                option.Add(99, "ヘルプ");
-                int input = Utility.ReadNumber(
-                    $"{Name} のターン\n出すカード または その他の行動を選択してください。", option);
-
-                if (input == 88)
-                {
-                    if (drawable)
-                    {
-                        AddCard(GameMaster.Instance.Draw());
-                        drawable = false;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-                else if (input == 99)
-                {
-                    Help.Top(Option);
-                }
-                else
-                {
-                    break;
-                }
-            }
-        }
+        public virtual void Next() { }
 
         #endregion
     }

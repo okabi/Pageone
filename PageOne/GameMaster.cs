@@ -1,5 +1,6 @@
-﻿using PageOne.Interfaces;
-using PageOne.Models;
+﻿using PageOne.Models;
+using PageOne.Models.Cards;
+using PageOne.Models.Players;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,13 +31,19 @@ namespace PageOne
         private Random random;
 
         /// <summary>プレイヤー。</summary>
-        private List<IPlayer> players;
+        private List<Player> players;
 
         /// <summary>山札。</summary>
         private Stack<Card> deck;
 
         /// <summary>捨て札。</summary>
         private Stack<Card> grave;
+
+        /// <summary>ロックされているか。</summary>
+        private bool locked;
+
+        /// <summary>各ターンの捨て札。</summary>
+        private List<Card> history;
 
         #endregion
 
@@ -51,6 +58,15 @@ namespace PageOne
             get
             {
                 return grave.Peek();
+            }
+        }
+
+        /// <summary>各ターンの捨て札。</summary>
+        public List<Card> History
+        {
+            get
+            {
+                return new List<Card>(history);
             }
         }
 
@@ -76,21 +92,22 @@ namespace PageOne
         public void Start(List<string> names)
         {
             // 変数の初期化
+            locked = false;
             Turn = 0;
             random = new Random();
             
             // プレイヤーの初期化
-            players = new List<IPlayer>();
+            players = new List<Player>();
             for (int i = 0; i < names.Count; i++)
             {
                 if (i == 0)
                 {
-                    players.Add(new Player(names[i]));
+                    players.Add(new ControllablePlayer(names[i]));
                 }
                 else
                 {
                     // テスト用
-                    players.Add(new Player(names[i]));
+                    players.Add(new ControllablePlayer(names[i]));
                 }
             }
 
@@ -98,14 +115,24 @@ namespace PageOne
             deck = new Stack<Card>();
             for (int i = 0; i < 2; i++)
             {
-                deck.Push(new Card(Card.SuitType.Joker, null));
+                deck.Push(new CardJoker());
             }
-            for (int i = 1; i <= 13; i++)
+            foreach (Card.SuitType suit in Enum.GetValues(typeof(Card.SuitType)))
             {
-                deck.Push(new Card(Card.SuitType.Spade, i));
-                deck.Push(new Card(Card.SuitType.Club, i));
-                deck.Push(new Card(Card.SuitType.Diamond, i));
-                deck.Push(new Card(Card.SuitType.Heart, i));
+                if (suit == Card.SuitType.Joker) continue;
+                deck.Push(new Card1(suit));
+                deck.Push(new Card2(suit));
+                deck.Push(new Card3(suit));
+                deck.Push(new Card4(suit));
+                deck.Push(new Card5(suit));
+                deck.Push(new Card6(suit));
+                deck.Push(new Card7(suit));
+                deck.Push(new Card8(suit));
+                deck.Push(new Card9(suit));
+                deck.Push(new Card10(suit));
+                deck.Push(new Card11(suit));
+                deck.Push(new Card12(suit));
+                deck.Push(new Card13(suit));
             }
             Shuffle();
 
@@ -153,9 +180,11 @@ namespace PageOne
         /// 指定したカードを捨て札にします。
         /// </summary>
         /// <param name="card">捨て札にするカード。</param>
-        public void Discard(Card card)
+        /// <returns>正常に処理が終了したか。</returns>
+        public bool Discard(Card card)
         {
             grave.Push(card);
+            return true;
         }
 
         #endregion
@@ -189,6 +218,32 @@ namespace PageOne
                 deck.Push(d[idx]);
                 d.RemoveAt(idx);
             }
+        }
+
+        /// <summary>
+        /// 指定したカードを捨て札にできるかを判定します。
+        /// </summary>
+        /// <param name="card">捨て札にしたいカード。</param>
+        /// <returns>捨て札にできるか。</returns>
+        private bool Validate(Card card)
+        {
+            // ジョーカーを出すならOK
+            if (card.Suit == Card.SuitType.Joker)   return true;
+
+            // ロックされているときにJ、Q、K以外ならNG
+            if (locked && card.Number <= 10) return false;
+
+            // スートが一致していればOK
+            if (card.Suit == TopOfGrave.declaredSuit)   return true;
+
+            // ジョーカーが出されているならNG
+            if (TopOfGrave.Suit == Card.SuitType.Joker) return false;
+
+            // 数字が一致していればOK
+            if (TopOfGrave.Number == card.Number) return true;
+
+            // いずれにも当てはまらない場合はNG
+            return false;
         }
 
         #endregion
