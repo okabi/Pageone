@@ -30,12 +30,6 @@
         /// <summary>イベントに関わったカード情報。非公開カードの場合は null になります。</summary>
         private readonly Card card;
 
-        /// <summary>イベントを発生させたプレイヤーのインデックス。最初の捨て札については -1 が指定されます。</summary>
-        private readonly int playerIndex;
-
-        /// <summary>イベントを発生させたプレイヤーの名前。</summary>
-        private readonly string playerName;
-
         #endregion
 
         #region プロパティ
@@ -52,15 +46,6 @@
             get { return card; }
         }
 
-        /// <summary>イベントを発生させたプレイヤーのインデックス。最初の捨て札については -1 が指定されます。</summary>
-        public int PlayerIndex
-        {
-            get
-            {
-                return playerIndex;
-            }
-        }
-
         #endregion
 
         #region コンストラクタ
@@ -70,14 +55,10 @@
         /// </summary>
         /// <param name="type">イベントの種類。</param>
         /// <param name="card">イベントに関わったカード情報。非公開カードの場合は null を指定してください。</param>
-        /// <param name="player">イベントを発生させたプレイヤーのインデックス。</param>
-        /// <param name="player">イベントを発生させたプレイヤーの名前。</param>
-        public Event(EventType type, Card card, int playerIndex, string playerName)
+        public Event(EventType type, Card card)
         {
             this.type = type;
             this.card = card;
-            this.playerIndex = playerIndex;
-            this.playerName = playerName;
         }
 
         #endregion
@@ -90,13 +71,12 @@
         /// <returns>イベントを表す文字列。</returns>
         public override string ToString()
         {
-            var ret = $"{playerName}: ";
-            ret +=
+            var ret =
                 Type == EventType.Draw ? "引く" :
                 Type == EventType.Discard ? "出す" :
-                Type == EventType.Disclose ? "オープン" :
+                Type == EventType.Disclose ? "公開" :
                 Type == EventType.Give ? "7渡し" :
-                "不明";
+                "不明(たぶんバグです)";
             ret += $" {Card}";
             return ret;
         }

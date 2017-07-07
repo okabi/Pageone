@@ -45,8 +45,12 @@ namespace PageOne
         /// <summary>ロックされているか。</summary>
         private bool locked;
 
-        /// <summary>各ターンの公開情報。</summary>
-        private List<List<Event>> history;
+        /// <summary>
+        /// 各ターンの公開情報。
+        /// プレイヤーのインデックス(最初の捨て札については -1)と
+        /// そのプレイヤーが取った公開行動のリストがターン毎に記録されています。
+        /// </summary>
+        private List<KeyValuePair<int, List<Event>>> history;
 
         /// <summary>現在ターンの公開情報。</summary>
         private List<Event> turnHistory;
@@ -64,16 +68,20 @@ namespace PageOne
             }
         }
 
-        /// <summary>各ターンの捨て札。</summary>
-        public List<List<Event>> History
+        /// <summary>
+        /// 各ターンの公開情報。
+        /// プレイヤーのインデックス(最初の捨て札については -1)と
+        /// そのプレイヤーが取った公開行動のリストがターン毎に記録されています。
+        /// </summary>
+        public List<KeyValuePair<int, List<Event>>> History
         {
             get
             {
                 // 履歴を書き換えられたくないのでコピーを渡す
-                var h = new List<List<Event>>();
+                var h = new List<KeyValuePair<int, List<Event>>>();
                 foreach (var e in history)
                 {
-                    h.Add(new List<Event>(e));
+                    h.Add(new KeyValuePair<int, List<Event>>(e.Key, new List<Event>(e.Value)));
                 }
                 return h;
             }
@@ -103,7 +111,7 @@ namespace PageOne
         {
             // 変数の初期化
             locked = false;
-            turnPlayerIndex = 0;
+            turnPlayerIndex = -1;
             random = new Random();
             
             // プレイヤーの初期化
@@ -156,7 +164,7 @@ namespace PageOne
             }
 
             // 履歴の初期化
-            history = new List<List<Event>>();
+            history = new List<KeyValuePair<int, List<Event>>>();
             turnHistory = new List<Event>();
 
             // 捨て札の初期化
@@ -179,6 +187,14 @@ namespace PageOne
         {
             if (deck.Count == 0)
             {
+                // 山札が無い場合
+                if (grave.Count <= 1)
+                {
+                    // 捨て札が1枚以下の場合、ゲーム終了
+                    // TODO: ゲーム終了処理
+                    return null;
+                }
+                // 捨て札のトップ以外の捨て札を新たな山札とする
                 var top = TopOfGrave;
                 grave.Pop();
                 while(grave.Count > 0)
@@ -205,11 +221,11 @@ namespace PageOne
             if (turnPlayerIndex == -1)
             {
                 // 最初の捨て札の場合
-                turnHistory.Add(new Event(Event.EventType.Discard, card, turnPlayerIndex, "GameMaster"));
+                turnHistory.Add(new Event(Event.EventType.Discard, card));
             }
             else
             {
-                turnHistory.Add(new Event(Event.EventType.Discard, card, turnPlayerIndex, players[turnPlayerIndex].Name));
+                turnHistory.Add(new Event(Event.EventType.Discard, card));
             }
             card.Opened = false;
             grave.Push(card);
@@ -257,10 +273,10 @@ namespace PageOne
         /// </summary>
         private void Next()
         {
-            history.Add(turnHistory);
+            history.Add(new KeyValuePair<int, List<Event>>(turnPlayerIndex, turnHistory));
             turnHistory = new List<Event>();
-            turnPlayerIndex++;
-            players[(turnPlayerIndex - 1) % players.Count].Next();
+            turnPlayerIndex = turnPlayerIndex % players.Count;
+            players[turnPlayerIndex].Next();
         }
 
         /// <summary>
