@@ -10,7 +10,7 @@ namespace PageOne
     /// <summary>
     /// ゲームの進行を管理するシングルトンです。
     /// </summary>
-    public class GameMaster
+    public sealed class GameMaster
     {
         #region シングルトンパターン
 
@@ -30,6 +30,9 @@ namespace PageOne
         /// <summary>乱数発生器。</summary>
         private Random random;
 
+        /// <summary>現在のターンプレイヤーを示すインデックス。</summary>
+        private int turnPlayerIndex;
+
         /// <summary>プレイヤー。</summary>
         private List<Player> players;
 
@@ -42,15 +45,15 @@ namespace PageOne
         /// <summary>ロックされているか。</summary>
         private bool locked;
 
-        /// <summary>各ターンの捨て札。</summary>
-        private List<Card> history;
+        /// <summary>各ターンの公開情報。</summary>
+        private List<List<Event>> history;
+
+        /// <summary>現在ターンの公開情報。</summary>
+        private List<Event> turnHistory;
 
         #endregion
 
         #region プロパティ
-
-        /// <summary>現在のターン数。</summary>
-        public int Turn { get; private set; }
 
         /// <summary>捨て札の一番上のカード。</summary>
         public Card TopOfGrave
@@ -62,11 +65,17 @@ namespace PageOne
         }
 
         /// <summary>各ターンの捨て札。</summary>
-        public List<Card> History
+        public List<List<Event>> History
         {
             get
             {
-                return new List<Card>(history);
+                // 履歴を書き換えられたくないのでコピーを渡す
+                var h = new List<List<Event>>();
+                foreach (var e in history)
+                {
+                    h.Add(new List<Event>(e));
+                }
+                return h;
             }
         }
 
@@ -75,9 +84,10 @@ namespace PageOne
         {
             get
             {
-                return $"{Turn} ターン目  山札: {deck.Count} 枚\n" +
+                return $"山札: {deck.Count} 枚\n" +
                     $"捨て札の一番上は {TopOfGrave} です。\n\n" +
-                    string.Join("\n", players.Select(x => x.Status));
+                    string.Join("\n", players.Select(x => x.Status) + "\n\n" +
+                    $"{players[turnPlayerIndex].Name} のターン");
             }
         }
 
@@ -93,7 +103,7 @@ namespace PageOne
         {
             // 変数の初期化
             locked = false;
-            Turn = 0;
+            turnPlayerIndex = 0;
             random = new Random();
             
             // プレイヤーの初期化
@@ -136,10 +146,6 @@ namespace PageOne
             }
             Shuffle();
 
-            // 捨て札の初期化
-            grave = new Stack<Card>();
-            grave.Push(Draw());
-
             // カード配分
             foreach (var player in players)
             {
@@ -149,9 +155,18 @@ namespace PageOne
                 }
             }
 
+            // 履歴の初期化
+            history = new List<List<Event>>();
+            turnHistory = new List<Event>();
+
+            // 捨て札の初期化
+            grave = new Stack<Card>();
+            Discard(Draw());
+
             // ゲームループ
             while (true)
             {
+                Console.Clear();
                 Next();
             }
         }
@@ -183,8 +198,54 @@ namespace PageOne
         /// <returns>正常に処理が終了したか。</returns>
         public bool Discard(Card card)
         {
+            if (!Validate(card))
+            {
+                return false;
+            }
+            if (turnPlayerIndex == -1)
+            {
+                // 最初の捨て札の場合
+                turnHistory.Add(new Event(Event.EventType.Discard, card, turnPlayerIndex, "GameMaster"));
+            }
+            else
+            {
+                turnHistory.Add(new Event(Event.EventType.Discard, card, turnPlayerIndex, players[turnPlayerIndex].Name));
+            }
+            card.Opened = false;
             grave.Push(card);
             return true;
+        }
+
+        /// <summary>
+        /// 指定したカードを捨て札にできるかを判定します。
+        /// </summary>
+        /// <param name="card">捨て札にしたいカード。</param>
+        /// <returns>捨て札にできるか。</returns>
+        public bool Validate(Card card)
+        {
+            // 最初の捨て札の場合はOK
+            if (grave.Count == 0) return true;
+
+            // 宣言スートがジョーカー(最初の捨て札がジョーカー)ならOK
+            if (TopOfGrave.declaredSuit == Card.SuitType.Joker) return true;
+
+            // ジョーカーを出すならOK
+            if (card.Suit == Card.SuitType.Joker) return true;
+
+            // ロックされているときにJ、Q、K以外ならNG
+            if (locked && card.Number <= 10) return false;
+
+            // スートが一致していればOK
+            if (card.Suit == TopOfGrave.declaredSuit) return true;
+
+            // ジョーカーが出されているならNG
+            if (TopOfGrave.Suit == Card.SuitType.Joker) return false;
+
+            // 数字が一致していればOK
+            if (TopOfGrave.Number == card.Number) return true;
+
+            // いずれにも当てはまらない場合はNG
+            return false;
         }
 
         #endregion
@@ -196,9 +257,10 @@ namespace PageOne
         /// </summary>
         private void Next()
         {
-            Turn++;
-            Console.Clear();
-            players[(Turn - 1) % players.Count].Next();
+            history.Add(turnHistory);
+            turnHistory = new List<Event>();
+            turnPlayerIndex++;
+            players[(turnPlayerIndex - 1) % players.Count].Next();
         }
 
         /// <summary>
@@ -218,32 +280,6 @@ namespace PageOne
                 deck.Push(d[idx]);
                 d.RemoveAt(idx);
             }
-        }
-
-        /// <summary>
-        /// 指定したカードを捨て札にできるかを判定します。
-        /// </summary>
-        /// <param name="card">捨て札にしたいカード。</param>
-        /// <returns>捨て札にできるか。</returns>
-        private bool Validate(Card card)
-        {
-            // ジョーカーを出すならOK
-            if (card.Suit == Card.SuitType.Joker)   return true;
-
-            // ロックされているときにJ、Q、K以外ならNG
-            if (locked && card.Number <= 10) return false;
-
-            // スートが一致していればOK
-            if (card.Suit == TopOfGrave.declaredSuit)   return true;
-
-            // ジョーカーが出されているならNG
-            if (TopOfGrave.Suit == Card.SuitType.Joker) return false;
-
-            // 数字が一致していればOK
-            if (TopOfGrave.Number == card.Number) return true;
-
-            // いずれにも当てはまらない場合はNG
-            return false;
         }
 
         #endregion

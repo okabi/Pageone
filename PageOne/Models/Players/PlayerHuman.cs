@@ -59,6 +59,7 @@ namespace PageOne.Models.Players
                 }
                 else
                 {
+                    RemoveCard(input - 1);
                     break;
                 }
             }
