@@ -19,48 +19,122 @@ namespace PageOne.Models.Players
 
         #endregion
 
-        #region public メソッド
+        #region public override メソッド
 
         /// <summary>
-        /// 自分のターンを処理し、次のターンに移します。
+        /// 1枚ドローしていない状態で、このターンに出すカードを決定して返します。
         /// </summary>
-        public override void Next()
+        /// <returns>このターンに出す手札のインデックス。カードを引く場合は -1 を返します。</returns>
+        public override int TurnAction()
         {
-            // ターンの開始処理
-            Drawable = true;
+            return SelectTurnAction(true);
+        }
 
-            // ターンの処理
+        /// <summary>
+        /// 1枚ドローした状態で、このターンに出すカードを決定して返します。
+        /// </summary>
+        /// <returns>このターンに出す手札のインデックス。何もしない場合は -1 を返します。</returns>
+        public override int TurnActionAfterDraw()
+        {
+            return SelectTurnAction(false);
+        }
+
+        /// <summary>
+        /// スキップが回ってきたときに取る行動を決定して返します。
+        /// </summary>
+        /// <param name="drawNum">ドロー効果中の場合は、ドロー枚数。</param>
+        /// <returns>このターンに出す手札のインデックス。何もせず効果を受ける場合は -1 を返します</returns>
+        public override int EffectSkipAction(int drawNum)
+        {
+            return -1;
+        }
+
+        /// <summary>
+        /// ドロー効果が回ってきたときに取る行動を決定して返します。
+        /// </summary>
+        /// <param name="drawNum">ドロー枚数。</param>
+        /// <returns>このターンに出す手札のインデックス。何もせず効果を受ける場合は -1 を返します。</returns>
+        public override int EffectDrawAction(int drawNum)
+        {
+            return -1;
+        }
+
+        /// <summary>
+        /// 凶ドロー効果が回ってきたときに取る行動を決定して返します。
+        /// </summary>
+        /// <param name="drawNum">ドロー枚数。</param>
+        /// <returns>このターンに出す手札のインデックス。何もせず効果を受ける場合は -1 を返します。</returns>
+        public override int EffectQueenDrawAction(int drawNum)
+        {
+            return -1;
+        }
+
+        /// <summary>
+        /// 知る権利が回ってきたときに出せる 5 のカードを持っていた場合に取る行動を決定して返します。
+        /// </summary>
+        /// <returns>このターンに出す手札のインデックス。何もせず効果を受ける場合は -1 を返します。</returns>
+        public override int EffectDiscloseActionDiscard()
+        {
+            return -1;
+        }
+
+        /// <summary>
+        /// 知る権利が回ってきたときに公開するカードを決定して返します。
+        /// </summary>
+        /// <returns>公開する手札のインデックス。</returns>
+        public override int EffectDiscloseActionDisclose()
+        {
+            for (int i = 0; i < Cards.Count; i++)
+            {
+                if (!Cards[i].Opened)
+                {
+                    return i;
+                }
+            }
+            return 0;
+        }
+
+        /// <summary>
+        /// 7渡しの効果発動時に取る行動を決定して返します。
+        /// </summary>
+        /// <returns>渡す手札のインデックス。何も渡さない場合は -1 を返します。</returns>
+        public override int EffectGiveAction()
+        {
+            return -1;
+        }
+
+        #endregion
+
+        #region private メソッド
+
+        /// <summary>
+        /// プレイヤーに、このターンに出すカードを決定させます。
+        /// </summary>
+        /// <param name="drawable">1枚カードを引く権利が残っているか。</param>
+        /// <returns>このターンに出す手札のインデックス。カードを引く or 何もしない場合は -1 を返します。</returns>
+        private int SelectTurnAction(bool drawable)
+        {
             while (true)
             {
-                Console.WriteLine(GameMaster.Instance.Status + "\n");
-
                 var option = new Dictionary<int, string>(
-                    Option.ToDictionary(x => x.Key, x => x.Value.ToString()));
-                option.Add(88, Drawable ? "カードを引く" : "パスする");
+                    Option.ToDictionary(x => x.Key + 1, x => x.Value.ToString()));
+                option.Add(88, drawable ? "カードを引く" : "パスする");
                 option.Add(99, "ヘルプ");
                 int input = Utility.ReadNumber(
-                    $"{Name} のターン\n出すカード または その他の行動を選択してください。", option);
+                    $"出すカード または その他の行動を選択してください。", option);
 
                 if (input == 88)
                 {
-                    if (Drawable)
-                    {
-                        AddCard(GameMaster.Instance.Draw());
-                        Drawable = false;
-                    }
-                    else
-                    {
-                        break;
-                    }
+                    return -1;
                 }
                 else if (input == 99)
                 {
-                    Help.Top(Option);
+                    Help.Top(UnvalidatedOption);
+                    Console.WriteLine(GameMaster.Instance.Status);
                 }
                 else
                 {
-                    RemoveCard(input - 1);
-                    break;
+                    return input - 1;
                 }
             }
         }

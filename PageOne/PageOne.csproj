@@ -43,20 +43,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Models\Cards\Card13.cs" />
-    <Compile Include="Models\Cards\Card12.cs" />
-    <Compile Include="Models\Cards\Card11.cs" />
-    <Compile Include="Models\Cards\Card10.cs" />
-    <Compile Include="Models\Cards\Card9.cs" />
-    <Compile Include="Models\Cards\Card8.cs" />
-    <Compile Include="Models\Cards\Card7.cs" />
-    <Compile Include="Models\Cards\Card6.cs" />
-    <Compile Include="Models\Cards\Card5.cs" />
-    <Compile Include="Models\Cards\Card4.cs" />
-    <Compile Include="Models\Cards\Card3.cs" />
-    <Compile Include="Models\Cards\Card2.cs" />
-    <Compile Include="Models\Cards\Card1.cs" />
-    <Compile Include="Models\Cards\CardJoker.cs" />
     <Compile Include="Models\Event.cs" />
     <Compile Include="Models\Player.cs" />
     <Compile Include="Models\Card.cs" />

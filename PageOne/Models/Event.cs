@@ -58,7 +58,7 @@
         public Event(EventType type, Card card)
         {
             this.type = type;
-            this.card = card;
+            this.card = card == null ? null : new Card(card.declaredSuit, card.Number);
         }
 
         #endregion
@@ -71,13 +71,22 @@
         /// <returns>イベントを表す文字列。</returns>
         public override string ToString()
         {
-            var ret =
-                Type == EventType.Draw ? "引く" :
-                Type == EventType.Discard ? "出す" :
-                Type == EventType.Disclose ? "公開" :
-                Type == EventType.Give ? "7渡し" :
-                "不明(たぶんバグです)";
-            ret += $" {Card}";
+            var ret = "不明(たぶんバグです)";
+            switch (Type)
+            {
+                case EventType.Draw:
+                    ret = $"カードをドローした";
+                    break;
+                case EventType.Discard:
+                    ret = $"{Card}を出した";
+                    break;
+                case EventType.Disclose:
+                    ret = $"手札の{Card}を公開した";
+                    break;
+                case EventType.Give:
+                    ret = $"手札を1枚渡した";
+                    break;
+            }
             return ret;
         }
 

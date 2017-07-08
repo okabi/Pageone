@@ -4,9 +4,9 @@ using System.Collections.Generic;
 namespace PageOne.Models
 {
     /// <summary>
-    /// トランプカードを表す抽象クラスです。
+    /// トランプカードを表すクラスです。
     /// </summary>
-    public abstract class Card
+    public class Card
     {
         #region 定数
 
@@ -33,7 +33,7 @@ namespace PageOne.Models
         private readonly SuitType suit;
 
         /// <summary>数字。</summary>
-        private readonly int? number;
+        private readonly int number;
 
         #endregion
 
@@ -49,7 +49,7 @@ namespace PageOne.Models
         public SuitType declaredSuit { get; set; }
 
         /// <summary>数字。</summary>
-        public int? Number
+        public int Number
         {
             get { return number; }
         }
@@ -66,16 +66,24 @@ namespace PageOne.Models
         /// </summary>
         /// <param name="suit">スート。</param>
         /// <param name="number">数字。</param>
-        public Card(SuitType suit, int? number)
+        public Card(SuitType suit, int number)
         {
-            if (number != null && (number < 1 || number > 13))
+            if (suit == SuitType.Joker && number >= 1 && number <= 13)
             {
-                throw new Exception("数字は1～13の間で設定してください。");
+                throw new Exception("ジョーカーの数字は1～13以外で設定してください。");
+            }
+            if (suit != SuitType.Joker && (number < 1 || number > 13))
+            {
+                throw new Exception("カードの数字は1～13の間で設定してください。");
             }
 
             this.suit = suit;
             this.number = number;
             declaredSuit = suit;
+            if (number == 8)
+            {
+                declaredSuit = SuitType.Joker;
+            }
             Opened = false;
         }
 
@@ -110,16 +118,6 @@ namespace PageOne.Models
             }
             return ret;
         }
-
-        #endregion
-
-        #region 仮想 public メソッド
-
-        /// <summary>
-        /// カード効果を発動します。
-        /// ゲームマスターから呼ばれる仮想メソッドです。
-        /// </summary>
-        public virtual void Effect() { }
 
         #endregion
     }

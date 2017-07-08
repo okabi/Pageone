@@ -191,7 +191,7 @@ namespace PageOne
             while (true)
             {
                 var option = new Dictionary<int, string>(
-                    cards.ToDictionary(x => x.Key, x => x.Value.ToString()));
+                    cards.ToDictionary(x => x.Key + 1, x => x.Value.ToString()));
                 option.Add(99, "トップに戻る");
                 int input = Utility.ReadNumber("手札のカード効果ヘルプ", option);
                 if (input == 99)
@@ -200,7 +200,7 @@ namespace PageOne
                 }
                 else
                 {
-                    var number = cards[input].Number == null ? 14 : cards[input].Number.Value;
+                    var number = cards[input - 1].Suit == Card.SuitType.Joker ? 14 : cards[input - 1].Number;
                     var message = CardEffect(number) + "\nEnter で戻ります。\n";
                     var descriptionOption = new Dictionary<int, string>();
                     descriptionOption.Add(99, "戻る");
