@@ -46,12 +46,13 @@
     <Compile Include="Models\Event.cs" />
     <Compile Include="Models\Player.cs" />
     <Compile Include="Models\Card.cs" />
-    <Compile Include="GameMaster.cs" />
-    <Compile Include="Help.cs" />
+    <Compile Include="Models\Effect.cs" />
+    <Compile Include="Singletons\GameMaster.cs" />
+    <Compile Include="Singletons\Help.cs" />
     <Compile Include="Models\Players\PlayerHuman.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Utility.cs" />
+    <Compile Include="Singletons\Utility.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PageOne.Singletons;
+using System;
 using System.Collections.Generic;
 
 namespace PageOne
@@ -18,7 +19,7 @@ namespace PageOne
             var names = Init();
 
             // ゲームの開始
-            GameMaster.Instance.Start(names);
+            GameMaster.Instance.Run(names);
         }
 
         /// <summary>

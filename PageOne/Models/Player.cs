@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PageOne.Singletons;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
