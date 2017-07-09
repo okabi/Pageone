@@ -63,7 +63,7 @@ namespace PageOne.Singletons
         {
             get
             {
-                return grave.Peek();
+                return new Card(grave.Peek());
             }
         }
 

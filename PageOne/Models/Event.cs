@@ -58,7 +58,7 @@
         public Event(EventType type, Card card)
         {
             this.type = type;
-            this.card = card == null ? null : new Card(card.declaredSuit, card.Number);
+            this.card = card == null ? null : new Card(card);
         }
 
         #endregion

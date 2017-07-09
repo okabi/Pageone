@@ -86,6 +86,18 @@ namespace PageOne.Models
             Opened = false;
         }
 
+        /// <summary>
+        /// カードのコピーを作成します。
+        /// </summary>
+        /// <param name="card">コピー元のカード。</param>
+        public Card(Card card)
+        {
+            suit = card.suit;
+            number = card.number;
+            declaredSuit = card.declaredSuit;
+            Opened = card.Opened;
+        }
+
         #endregion
 
         #region public メソッド
