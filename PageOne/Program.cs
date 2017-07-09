@@ -1,6 +1,9 @@
-﻿using PageOne.Singletons;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using PageOne.Models;
+using PageOne.Models.Players;
+using PageOne.Singletons;
 
 namespace PageOne
 {
@@ -16,19 +19,19 @@ namespace PageOne
         static void Main(string[] args)
         {
             // 初期設定
-            var names = Init();
+            var players = Init();
 
             // ゲームの開始
-            GameMaster.Instance.Run(names);
+            GameMaster.Instance.Run(players);
         }
 
         /// <summary>
         /// ゲームの初期設定です。
         /// </summary>
-        /// <returns>設定されたプレイヤー名のリスト。</returns>
-        static List<string> Init()
+        /// <returns>設定されたプレイヤーのリスト。</returns>
+        static List<Player> Init()
         {
-            // プレイヤーの設定
+            // プレイヤー人数の設定
             int playerNum;
             while (true)
             {
@@ -48,6 +51,8 @@ namespace PageOne
                 }
                 Console.Error.WriteLine("2 人 ～ 8 人を入力してください。");
             }
+
+            // プレイヤー名の設定
             var names = new List<string>(playerNum);
             for (int i = 0; i < playerNum; i++)
             {
@@ -55,7 +60,8 @@ namespace PageOne
                 names.Add(Console.ReadLine());
             }
 
-            return names;
+            // プレイヤーインスタンスを生成して返す
+            return names.Select(x => new PlayerHuman(x) as Player).ToList();
         }
     }
 }

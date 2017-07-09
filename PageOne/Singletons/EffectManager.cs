@@ -1,12 +1,30 @@
 ﻿using System;
+using PageOne.Models;
 
-namespace PageOne.Models
+namespace PageOne.Singletons
 {
     /// <summary>
-    /// 発生中のカード効果を管理するクラスです。
+    /// 発生中のカード効果を管理するシングルトンです。
     /// </summary>
-    public sealed class Effect
+    public sealed class EffectManager
     {
+        #region シングルトンパターン
+
+        private static EffectManager instance = new EffectManager();
+
+        public static EffectManager Instance
+        {
+            get { return instance; }
+        }
+
+        private EffectManager()
+        {
+            Init();
+            Reversing = false;
+        }
+
+        #endregion
+
         #region 定数
 
         /// <summary>カード効果の種類。</summary>
@@ -48,16 +66,27 @@ namespace PageOne.Models
         /// <summary>7渡しで次のプレイヤーに渡されるカード。</summary>
         public Card GiftCard { get; private set; }
 
-        #endregion
+        /// <summary>リバース発動中か。</summary>
+        public bool Reversing { get; private set; }
 
-        #region コンストラクタ
-
-        /// <summary>
-        /// コンストラクタです。
-        /// </summary>
-        public Effect()
+        /// <summary>カード効果の発生状況。</summary>
+        public string Status
         {
-            Init();
+            get
+            {
+                var ret = Reversing ? "リバース発動中\n" : "";
+                ret +=
+                    Type == EffectType.Skip ? "スキップ効果発動中" :
+                    Type == EffectType.Draw ? "ドロー効果発生中！" :
+                    Type == EffectType.Disclose ? "知る権利発動" :
+                    Type == EffectType.Lock ? "ロック発動中" :
+                    Type == EffectType.Give ? "7渡し発動" :
+                    Type == EffectType.ChainOfHate ? "憎しみの連鎖発動" :
+                    Type == EffectType.Quick ? "連続行動発動！" :
+                    Type == EffectType.QueenDraw ? "凶ドロー効果発生中！！" : "";
+                ret += DrawNum > 0 ? $"  ドロー枚数: {DrawNum}" : "";
+                return ret;
+            }
         }
 
         #endregion
@@ -65,7 +94,7 @@ namespace PageOne.Models
         #region public メソッド
 
         /// <summary>
-        /// カード効果発動後に呼ぶべきメソッドです。
+        /// カード効果の処理後に呼ぶべきメソッドです。
         /// </summary>
         public void Reset()
         {
@@ -80,7 +109,7 @@ namespace PageOne.Models
         }
 
         /// <summary>
-        /// カード効果を更新します。
+        /// 出されたカードに応じてカード効果を更新します。
         /// </summary>
         /// <param name="card">更新判定を行うカード。</param>
         /// <param name="giftCard">7渡しで次のプレイヤーに渡されるカード。</param>
@@ -96,6 +125,9 @@ namespace PageOne.Models
                     DrawNum += (int)Math.Pow(2, CardTwoNum == 0 ? 1 : CardTwoNum);
                     CardTwoNum += 1;
                     break;
+                case 3:
+                    Reversing = !Reversing;
+                    break;
                 case 4:
                     Type = EffectType.Disclose;
                     break;
@@ -103,11 +135,19 @@ namespace PageOne.Models
                     Type = EffectType.Lock;
                     break;
                 case 7:
-                    Type = EffectType.Give;
-                    GiftCard = giftCard;
+                    if (giftCard == null)
+                    {
+                        Init();
+                    }
+                    else
+                    {
+                        Type = EffectType.Give;
+                        GiftCard = giftCard;
+                    }
                     break;
                 case 9:
                     Type = EffectType.ChainOfHate;
+                    DrawNum = 1;
                     break;
                 case 11:
                     Type = EffectType.Quick;
@@ -164,7 +204,7 @@ namespace PageOne.Models
         #region private メソッド
 
         /// <summary>
-        /// 状態を初期化します。
+        /// リバース以外の状態を初期化します。
         /// </summary>
         private void Init()
         {

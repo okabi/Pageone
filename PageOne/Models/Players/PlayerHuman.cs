@@ -1,7 +1,7 @@
-﻿using PageOne.Singletons;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using PageOne.Singletons;
 
 namespace PageOne.Models.Players
 {

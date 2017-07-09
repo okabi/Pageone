@@ -1,8 +1,11 @@
-﻿using PageOne.Models;
-using PageOne.Models.Players;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using PageOne.Models;
+using PageOne.Models.Players;
+using static PageOne.Models.Card;
+using static PageOne.Models.Event;
+using static PageOne.Singletons.EffectManager;
 
 namespace PageOne.Singletons
 {
@@ -32,14 +35,14 @@ namespace PageOne.Singletons
         /// <summary>プレイヤー。</summary>
         private List<Player> players;
 
+        /// <summary>手札。</summary>
+        private List<Hand> hands;
+
         /// <summary>山札。</summary>
         private Stack<Card> deck;
 
         /// <summary>捨て札。</summary>
         private Stack<Card> grave;
-
-        /// <summary>リバース発動中か。</summary>
-        private bool reversing;
 
         /// <summary>
         /// 各ターンの公開情報。
@@ -50,9 +53,6 @@ namespace PageOne.Singletons
 
         /// <summary>現在ターンでのターンプレイヤーの公開行動のリスト。</summary>
         private List<Event> turnHistory;
-
-        /// <summary>カード効果を管理するインスタンス。</summary>
-        private Effect effect;
 
         #endregion
 
@@ -80,7 +80,9 @@ namespace PageOne.Singletons
                 var h = new List<KeyValuePair<int, List<Event>>>();
                 foreach (var e in history)
                 {
-                    h.Add(new KeyValuePair<int, List<Event>>(e.Key, new List<Event>(e.Value)));
+                    h.Add(new KeyValuePair<int, List<Event>>(
+                        e.Key, 
+                        new List<Event>(e.Value.Select(x => new Event(x)))));
                 }
                 return h;
             }
@@ -91,22 +93,11 @@ namespace PageOne.Singletons
         {
             get
             {
-                var effectString =
-                    effect.Type == Effect.EffectType.Skip ? $"スキップ効果発動中  ドロー枚数: {effect.DrawNum}" :
-                    effect.Type == Effect.EffectType.Draw ? $"ドロー効果発生中！  ドロー枚数: {effect.DrawNum}" :
-                    effect.Type == Effect.EffectType.QueenDraw ? $"凶ドロー効果発生中！  ドロー枚数: {effect.DrawNum}" :
-                    effect.Type == Effect.EffectType.Disclose ? "知る権利発動" :
-                    effect.Type == Effect.EffectType.Lock ? "ロック発動中" :
-                    effect.Type == Effect.EffectType.Give ? "7渡し発動" :
-                    effect.Type == Effect.EffectType.ChainOfHate ? "憎しみの連鎖発動" :
-                    effect.Type == Effect.EffectType.Quick ? "連続行動発動！" : "";
-                var reverseString = reversing ? "リバース発動中\n" : "";
-
                 return $"山札: {deck.Count} 枚\n" +
-                    $"捨て札の一番上は {TopOfGrave} です。{reverseString}\n\n" +
+                    $"捨て札の一番上は {TopOfGrave} です。\n\n" +
                     $"{string.Join("\n", players.Select(x => x.Status))}\n\n" +
                     $"{players[turnPlayerIndex].Name} のターン\n" +
-                    $"{effectString}\n";
+                    $"{EffectManager.Instance.Status}\n";
             }
         }
 
@@ -117,34 +108,18 @@ namespace PageOne.Singletons
         /// <summary>
         /// ゲームを初期化して開始します。
         /// </summary>
-        /// <param name="names">参加プレイヤー名のリスト。</param>
-        public void Run(List<string> names)
+        /// <param name="names">参加プレイヤーのリスト。</param>
+        public void Run(List<Player> players)
         {
             // 変数の初期化
-            effect = new Effect();
-            reversing = false;
+            this.players = players;
             turnPlayerIndex = 0;
             
-            // プレイヤーの初期化
-            players = new List<Player>();
-            for (int i = 0; i < names.Count; i++)
-            {
-                if (i == 0)
-                {
-                    players.Add(new PlayerHuman(names[i]));
-                }
-                else
-                {
-                    // テスト用
-                    players.Add(new PlayerHuman(names[i]));
-                }
-            }
-
             // デッキの初期化
             deck = new Stack<Card>();
-            foreach (Card.SuitType suit in Enum.GetValues(typeof(Card.SuitType)))
+            foreach (SuitType suit in Enum.GetValues(typeof(SuitType)))
             {
-                if (suit == Card.SuitType.Joker)
+                if (suit == SuitType.Joker)
                 {
                     for (int i = 0; i < 2; i++)
                     {
@@ -161,30 +136,25 @@ namespace PageOne.Singletons
             }
             Shuffle();
 
-            // カード配分
-            foreach (var player in players)
+            // 手札の初期化
+            hands = new List<Hand>();
+            for (int i = 0; i < players.Count; i++)
             {
-                for (int i = 0; i < 5; i++)
+                hands.Add(new Hand());
+                players[i].SetHandReference(hands[i]);
+                for (int j = 0; j < 5; j++)
                 {
-                    player.AddCard(Draw());
+                    hands[i].AddCard(Draw());
                 }
             }
 
-            // 捨て札の初期化
-            grave = new Stack<Card>();
-            Discard(Draw());
-
             // 履歴の初期化
             turnHistory = new List<Event>();
-            history = new List<KeyValuePair<int, List<Event>>>()
-            {
-                new KeyValuePair<int, List<Event>>(
-                    -1,
-                    new List<Event>()
-                    {
-                        new Event(Event.EventType.Discard, TopOfGrave)
-                    })
-            };
+            history = new List<KeyValuePair<int, List<Event>>>();
+
+            // 捨て札の初期化
+            grave = new Stack<Card>();
+            Discard();
 
             // ゲームループ
             while (true)
@@ -205,19 +175,19 @@ namespace PageOne.Singletons
             if (grave.Count == 0) return true;
 
             // 宣言スートがジョーカー(最初の捨て札がジョーカー)ならOK
-            if (TopOfGrave.declaredSuit == Card.SuitType.Joker) return true;
+            if (TopOfGrave.declaredSuit == SuitType.Joker) return true;
 
             // ジョーカーを出すならOK
-            if (card.Suit == Card.SuitType.Joker) return true;
+            if (card.Suit == SuitType.Joker) return true;
 
             // ロックされているときにJ、Q、K以外ならNG
-            if (effect.Type == Effect.EffectType.Lock && card.Number <= 10) return false;
+            if (EffectManager.Instance.Type == EffectType.Lock && card.Number <= 10) return false;
 
             // スートが一致していればOK
             if (card.Suit == TopOfGrave.declaredSuit) return true;
 
             // ジョーカーが出されているならNG
-            if (TopOfGrave.Suit == Card.SuitType.Joker) return false;
+            if (TopOfGrave.Suit == SuitType.Joker) return false;
 
             // 数字が一致していればOK
             if (TopOfGrave.Number == card.Number) return true;
@@ -240,7 +210,7 @@ namespace PageOne.Singletons
 
             // ターンアクション処理
             Card card = null;
-            var discards = turnHistory.Where(x => x.Type == Event.EventType.Discard).ToArray();
+            var discards = turnHistory.Where(x => x.Type == EventType.Discard).ToArray();
             if (discards.Length > 0)
             {
                 card = discards[0].Card;
@@ -248,7 +218,7 @@ namespace PageOne.Singletons
             TurnAction(card);
 
             // ターン後処理
-            discards = turnHistory.Where(x => x.Type == Event.EventType.Discard).ToArray();
+            discards = turnHistory.Where(x => x.Type == EventType.Discard).ToArray();
             if (discards.Length > 0)
             {
                 card = discards[0].Card;
@@ -260,16 +230,15 @@ namespace PageOne.Singletons
             turnHistory = new List<Event>();
 
             // ターン進行処理
-            if (effect.Type != Effect.EffectType.Quick)
+            if (EffectManager.Instance.Type != EffectType.Quick)
             {
-                int c = players.Count;
-                if (reversing)
+                if (EffectManager.Instance.Reversing)
                 {
-                    turnPlayerIndex = (turnPlayerIndex + c - 1) % c;
+                    turnPlayerIndex = (turnPlayerIndex + players.Count - 1) % players.Count;
                 }
                 else
                 {
-                    turnPlayerIndex = (turnPlayerIndex + 1) % c;
+                    turnPlayerIndex = (turnPlayerIndex + 1) % players.Count;
                 }
             }
         }
@@ -285,18 +254,18 @@ namespace PageOne.Singletons
 
             // カード効果に対するプレイヤーのアクションを取得
             int index = -1;
-            switch (effect.Type)
+            switch (EffectManager.Instance.Type)
             {
-                case Effect.EffectType.Skip:
-                    index = players[turnPlayerIndex].EffectSkipAction(effect.DrawNum);
+                case EffectType.Skip:
+                    index = players[turnPlayerIndex].EffectSkipAction(EffectManager.Instance.DrawNum);
                     break;
-                case Effect.EffectType.Draw:
-                    index = players[turnPlayerIndex].EffectDrawAction(effect.DrawNum);
+                case EffectType.Draw:
+                    index = players[turnPlayerIndex].EffectDrawAction(EffectManager.Instance.DrawNum);
                     break;
-                case Effect.EffectType.QueenDraw:
-                    index = players[turnPlayerIndex].EffectQueenDrawAction(effect.DrawNum);
+                case EffectType.QueenDraw:
+                    index = players[turnPlayerIndex].EffectQueenDrawAction(EffectManager.Instance.DrawNum);
                     break;
-                case Effect.EffectType.Disclose:
+                case EffectType.Disclose:
                     index = players[turnPlayerIndex].EffectDiscloseActionDiscard();
                     break;
             }
@@ -304,9 +273,7 @@ namespace PageOne.Singletons
             // ゲーム状態の更新
             if (index >= 0)
             {
-                var c = players[turnPlayerIndex].RemoveCard(index);
-                Discard(c);
-                turnHistory.Add(new Event(Event.EventType.Discard, c));
+                Discard(turnPlayerIndex, index);
             }
         }
 
@@ -318,54 +285,49 @@ namespace PageOne.Singletons
         {
             // ステータス表示
             Console.Clear();
+            foreach (var h in history)
+            {
+                Console.WriteLine($"{h.Key}");
+                Console.WriteLine($"{string.Join("\n", h.Value)}");
+            }
             Console.WriteLine(Status);
 
             // カード効果を飛ばせるか確認
-            var skippable = card == null ? false : effect.Avoidable(card);
+            var skippable = card == null ? false : EffectManager.Instance.Avoidable(card);
 
             // 次プレイヤーに回せないカード効果を受ける
             if (!skippable)
             {
-                switch (effect.Type)
+                switch (EffectManager.Instance.Type)
                 {
-                    case Effect.EffectType.Skip:
-                        effect.Reset();
+                    case EffectType.Skip:
+                        EffectManager.Instance.Reset();
                         return;
-                    case Effect.EffectType.Draw:
-                        for (int i = 0; i < effect.DrawNum; i++)
-                        {
-                            players[turnPlayerIndex].AddCard(Draw());
-                            turnHistory.Add(new Event(Event.EventType.Draw, null));
-                        }
-                        effect.Reset();
-                        break;
-                    case Effect.EffectType.Disclose:
+                    case EffectType.Disclose:
                         for (int i = 0; i < 2; i++)
                         {
                             if (players[turnPlayerIndex].Disclosable)
                             {
                                 int index = players[turnPlayerIndex].EffectDiscloseActionDisclose();
-                                var c = players[turnPlayerIndex].DiscloseCard(index);
-                                turnHistory.Add(new Event(Event.EventType.Disclose, c));
+                                var c = hands[turnPlayerIndex].DiscloseCard(index);
+                                turnHistory.Add(new Event(EventType.Disclose, c));
                             }
                         }
-                        effect.Reset();
+                        EffectManager.Instance.Reset();
                         break;
-                    case Effect.EffectType.Give:
-                        players[turnPlayerIndex].AddCard(effect.GiftCard);
-                        effect.Reset();
+                    case EffectType.Give:
+                        hands[turnPlayerIndex].AddCard(EffectManager.Instance.GiftCard);
+                        EffectManager.Instance.Reset();
                         break;
-                    case Effect.EffectType.ChainOfHate:
-                        players[turnPlayerIndex].AddCard(Draw());
-                        turnHistory.Add(new Event(Event.EventType.Draw, null));
-                        break;
-                    case Effect.EffectType.QueenDraw:
-                        for (int i = 0; i < effect.DrawNum; i++)
+                    case EffectType.Draw:
+                    case EffectType.QueenDraw:
+                    case EffectType.ChainOfHate:
+                        for (int i = 0; i < EffectManager.Instance.DrawNum; i++)
                         {
-                            players[turnPlayerIndex].AddCard(Draw());
-                            turnHistory.Add(new Event(Event.EventType.Draw, null));
+                            hands[turnPlayerIndex].AddCard(Draw());
+                            turnHistory.Add(new Event(EventType.Draw, null));
                         }
-                        effect.Reset();
+                        EffectManager.Instance.Reset();
                         break;
                 }
             }
@@ -376,8 +338,8 @@ namespace PageOne.Singletons
                 var index = players[turnPlayerIndex].TurnAction();
                 if (index == -1)
                 {
-                    players[turnPlayerIndex].AddCard(Draw());
-                    turnHistory.Add(new Event(Event.EventType.Draw, null));
+                    hands[turnPlayerIndex].AddCard(Draw());
+                    turnHistory.Add(new Event(EventType.Draw, null));
                     // ステータス表示
                     Console.Clear();
                     Console.WriteLine(Status);
@@ -385,9 +347,7 @@ namespace PageOne.Singletons
                 }
                 if (index >= 0)
                 {
-                    var c = players[turnPlayerIndex].RemoveCard(index);
-                    Discard(c);
-                    turnHistory.Add(new Event(Event.EventType.Discard, c));
+                    Discard(turnPlayerIndex, index);
                 }
             }
         }
@@ -405,30 +365,23 @@ namespace PageOne.Singletons
             // カードを出していない場合はカード効果が消える
             if (card == null)
             {
-                effect.Reset();
+                EffectManager.Instance.Reset();
                 return;
             }
 
             // カード効果を記録して次ターンに持ち込む
-            if (card.Number == 3)
+            Card giftCard = null;
+            if (card.Number == 7)
             {
-                reversing = !reversing;
-            }
-            else if(card.Number == 7)
-            {
-                Card giftCard = null;
+                // 7を出した場合は渡すカードを決める
                 var index = players[turnPlayerIndex].EffectGiveAction();
                 if (index != -1)
                 {
-                    giftCard = players[turnPlayerIndex].RemoveCard(index);
-                    turnHistory.Add(new Event(Event.EventType.Give, null));
+                    giftCard = hands[turnPlayerIndex].RemoveCard(index);
+                    turnHistory.Add(new Event(EventType.Give, null));
                 }
-                effect.Update(card, giftCard);
             }
-            else
-            {
-                effect.Update(card);
-            }
+            EffectManager.Instance.Update(card, giftCard);
         }
 
         #endregion
@@ -464,28 +417,35 @@ namespace PageOne.Singletons
         }
 
         /// <summary>
-        /// 指定したカードを捨て札にします。捨て札にできないカードが指定された場合は例外を発生させます。
+        /// ゲーム開始時の処理に利用します。山札を1枚捨て札にします。
         /// </summary>
-        /// <param name="card">捨て札にするカード。</param>
-        /// <returns>正常に処理が終了したか。</returns>
-        private void Discard(Card card)
+        private void Discard()
         {
+            var card = Draw();
+            card.declaredSuit = card.Suit;  // 最初の捨て札のみスートが自動設定される
+            history.Add(new KeyValuePair<int, List<Event>>(
+                -1,
+                new List<Event>() { new Event(EventType.Discard, new Card(card)) }));
+            grave.Push(card);
+        }
+
+        /// <summary>
+        /// 指定した手札を捨て札にします。捨て札にできないカードが指定された場合は例外を発生させます。
+        /// </summary>
+        /// <param name="playerIndex">手札を捨てるプレイヤーのインデックス。</param>
+        /// <param name="cardIndex">手札のインデックス。</param>
+        private void Discard(int playerIndex, int cardIndex)
+        {
+            var card = hands[playerIndex].RemoveCard(cardIndex);
             if (!Validate(card))
             {
                 throw new Exception($"捨て札の一番上の {TopOfGrave} に対して {card} が捨て札として選択されました。");
             }
-            if (card.declaredSuit == Card.SuitType.Joker)
+            if (card.declaredSuit == SuitType.Joker)
             {
-                // 最初の捨て札のみスートを自動設定する
-                if (grave.Count == 0)
-                {
-                    card.declaredSuit = card.Suit;
-                }
-                else
-                {
-                    throw new Exception($"{card} を捨て札にする前にスートを宣言する必要があります。");
-                }
+                throw new Exception($"{card} を捨て札にする前にスートを宣言する必要があります。");
             }
+            turnHistory.Add(new Event(EventType.Discard, new Card(card)));
             card.Opened = false;
             grave.Push(card);
         }

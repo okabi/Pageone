@@ -61,6 +61,16 @@
             this.card = card == null ? null : new Card(card);
         }
 
+        /// <summary>
+        /// イベントのコピーを作成します。
+        /// </summary>
+        /// <param name="ev">コピー元のイベント。</param>
+        public Event(Event ev)
+        {
+            type = ev.type;
+            card = ev.card;
+        }
+
         #endregion
 
         #region public メソッド

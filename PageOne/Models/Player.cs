@@ -1,7 +1,7 @@
-﻿using PageOne.Singletons;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using PageOne.Singletons;
 
 namespace PageOne.Models
 {
@@ -12,8 +12,8 @@ namespace PageOne.Models
     {
         #region フィールド
 
-        /// <summary>手札。</summary>
-        private List<Card> cards;
+        /// <summary>手札への参照。</summary>
+        private Hand hand;
 
         #endregion
 
@@ -27,7 +27,7 @@ namespace PageOne.Models
         {
             get
             {
-                return $"{Name}: " + string.Join(" ", cards.Select(x => $"{x, 5}"));
+                return $"{Name}: " + string.Join(" ", hand.Cards.Select(x => $"{x, 5}"));
             }
         }
 
@@ -36,18 +36,17 @@ namespace PageOne.Models
         {
             get
             {
-                return cards.Select(x => x.Opened).Contains(false);
+                return hand.Cards.Select(x => x.Opened).Contains(false);
             }
         }
 
 
-        /// <summary>手札。</summary>
+        /// <summary>手札にあるカードのリストのコピー。</summary>
         protected List<Card> Cards
         {
             get
             {
-                // 派生クラスで手札を制御されたくないのでコピーを返す
-                return new List<Card>(cards);
+                return hand.Cards;
             }
         }
 
@@ -85,7 +84,7 @@ namespace PageOne.Models
         public Player(string name)
         {
             Name = name;
-            cards = new List<Card>();
+            hand = null;
         }
 
         #endregion
@@ -93,49 +92,17 @@ namespace PageOne.Models
         #region public メソッド
 
         /// <summary>
-        /// 手札を加えます。
+        /// このプレイヤーの手札への参照を設定します。
+        /// 既に参照が設定されている場合は例外を発生させます。
         /// </summary>
-        /// <param name="card">追加する手札。</param>
-        public void AddCard(Card card)
+        /// <param name="hand">手札への参照。</param>
+        public void SetHandReference(Hand hand)
         {
-            cards.Add(card);
-        }
-
-        /// <summary>
-        /// 手札を捨てます。
-        /// </summary>
-        /// <param name="index">捨てる手札のインデックス。</param>
-        /// <returns>捨てる手札。</returns>
-        public Card RemoveCard(int index)
-        {
-            if (index < 0 || index >= cards.Count)
+            if (this.hand != null)
             {
-                throw new Exception("手札の指定インデックスが不正です。" +
-                    $"{cards.Count}枚に対して{index}が指定されています。");
+                throw new Exception($"{Name} の手札への参照は既に設定されています。");
             }
-            var ret = cards[index];
-            cards.RemoveAt(index);
-            return ret;
-        }
-
-        /// <summary>
-        /// 手札を公開します。
-        /// </summary>
-        /// <param name="index">公開する手札のインデックス。</param>
-        /// <returns>公開する手札。</returns>
-        public Card DiscloseCard(int index)
-        {
-            if (index < 0 || index >= cards.Count)
-            {
-                throw new Exception("手札の指定インデックスが不正です。" +
-                    $"{cards.Count}枚に対して{index}が指定されています。");
-            }
-            if (cards[index].Opened)
-            {
-                throw new Exception($"{cards[index]} は既に公開されています。");
-            }
-            cards[index].Opened = true;
-            return cards[index];
+            this.hand = hand;
         }
 
         #endregion
