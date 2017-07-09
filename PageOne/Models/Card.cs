@@ -45,7 +45,7 @@ namespace PageOne.Models
         }
 
         /// <summary>捨て札時に宣言されているスート(マーク)。</summary>
-        public SuitType declaredSuit { get; set; }
+        public SuitType DeclaredSuit { get; set; }
 
         /// <summary>数字。</summary>
         public int Number
@@ -78,10 +78,10 @@ namespace PageOne.Models
 
             this.suit = suit;
             this.number = number;
-            declaredSuit = suit;
+            DeclaredSuit = suit;
             if (number == 8)
             {
-                declaredSuit = SuitType.Joker;
+                DeclaredSuit = SuitType.Joker;
             }
             Opened = false;
         }
@@ -94,7 +94,7 @@ namespace PageOne.Models
         {
             suit = card.suit;
             number = card.number;
-            declaredSuit = card.declaredSuit;
+            DeclaredSuit = card.DeclaredSuit;
             Opened = card.Opened;
         }
 
@@ -126,6 +126,15 @@ namespace PageOne.Models
             if (Opened)
             {
                 ret += "(表)";
+            }
+            if (DeclaredSuit != SuitType.Joker && Suit != DeclaredSuit)
+            {
+                ret += "（宣言スート: ";
+                ret +=
+                    DeclaredSuit == SuitType.Spade ? "S" :
+                    DeclaredSuit == SuitType.Club ? "C" :
+                    DeclaredSuit == SuitType.Diamond ? "D" : "H";
+                ret += "）";
             }
             return ret;
         }

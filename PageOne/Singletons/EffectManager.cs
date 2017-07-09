@@ -153,7 +153,7 @@ namespace PageOne.Singletons
                     Type = EffectType.Quick;
                     break;
                 case 12:
-                    if (card.declaredSuit == Card.SuitType.Spade)
+                    if (card.DeclaredSuit == Card.SuitType.Spade)
                     {
                         DrawNum += 5;
                         Type = EffectType.QueenDraw;
@@ -187,7 +187,7 @@ namespace PageOne.Singletons
                     break;
                 case EffectType.Draw:
                     ret = card.Suit == Card.SuitType.Joker || card.Number == 1 || card.Number == 2 || card.Number == 3 ||
-                        (card.declaredSuit == Card.SuitType.Spade && card.Number == 12) || card.Number == 13;
+                        (card.DeclaredSuit == Card.SuitType.Spade && card.Number == 12) || card.Number == 13;
                     break;
                 case EffectType.QueenDraw:
                     ret = card.Suit == Card.SuitType.Joker || card.Number == 12 || card.Number == 13;

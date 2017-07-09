@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using PageOne.Singletons;
+using static PageOne.Models.Card;
 
 namespace PageOne.Models.Players
 {
@@ -38,6 +39,16 @@ namespace PageOne.Models.Players
         public override int TurnActionAfterDraw()
         {
             return SelectTurnAction(false);
+        }
+
+        /// <summary>
+        /// スート変更効果を持つカードを出すときに呼ばれます。
+        /// 変更するスートを決定して返します。
+        /// </summary>
+        /// <returns>変更するスート。ただし、ジョーカー以外にしてください。</returns>
+        public override SuitType SelectSuit()
+        {
+            return SuitType.Spade;
         }
 
         /// <summary>

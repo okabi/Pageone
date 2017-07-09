@@ -142,7 +142,7 @@ namespace PageOne.Singletons
             if (grave.Count == 0) return true;
 
             // 宣言スートがジョーカー(最初の捨て札がジョーカー)ならOK
-            if (TopOfGrave.declaredSuit == SuitType.Joker) return true;
+            if (TopOfGrave.DeclaredSuit == SuitType.Joker) return true;
 
             // ジョーカーを出すならOK
             if (card.Suit == SuitType.Joker) return true;
@@ -151,7 +151,7 @@ namespace PageOne.Singletons
             if (EffectManager.Instance.Type == EffectType.Lock && card.Number <= 10) return false;
 
             // スートが一致していればOK
-            if (card.Suit == TopOfGrave.declaredSuit) return true;
+            if (card.Suit == TopOfGrave.DeclaredSuit) return true;
 
             // ジョーカーが出されているならNG
             if (TopOfGrave.Suit == SuitType.Joker) return false;
@@ -373,7 +373,7 @@ namespace PageOne.Singletons
         private void Discard()
         {
             var card = Draw();
-            card.declaredSuit = card.Suit;  // 最初の捨て札のみスートが自動設定される
+            card.DeclaredSuit = card.Suit;  // 最初の捨て札のみスートが自動設定される
             HistoryManager.Instance.Add(EventType.Discard, card);
             HistoryManager.Instance.Next(-1);
             grave.Push(card);
@@ -391,9 +391,13 @@ namespace PageOne.Singletons
             {
                 throw new Exception($"捨て札の一番上の {TopOfGrave} に対して {card} が捨て札として選択されました。");
             }
-            if (card.declaredSuit == SuitType.Joker)
+            if (card.DeclaredSuit == SuitType.Joker)
             {
-                throw new Exception($"{card} を捨て札にする前にスートを宣言する必要があります。");
+                card.DeclaredSuit = players[playerIndex].SelectSuit();
+                if (card.DeclaredSuit == SuitType.Joker)
+                {
+                    throw new Exception($"{card} の宣言スートがジョーカーになっています。");
+                }
             }
             HistoryManager.Instance.Add(EventType.Discard, card);
             card.Opened = false;

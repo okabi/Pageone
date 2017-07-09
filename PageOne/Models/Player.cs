@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using PageOne.Singletons;
+using static PageOne.Models.Card;
 
 namespace PageOne.Models
 {
@@ -125,6 +126,16 @@ namespace PageOne.Models
         public virtual int TurnActionAfterDraw()
         {
             return -1;
+        }
+
+        /// <summary>
+        /// スート変更効果を持つカードを出すときに呼ばれます。
+        /// 変更するスートを決定して返します。
+        /// </summary>
+        /// <returns>変更するスート。ただし、ジョーカー以外にしてください。</returns>
+        public virtual SuitType SelectSuit()
+        {
+            return SuitType.Spade;
         }
 
         /// <summary>
