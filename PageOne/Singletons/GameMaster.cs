@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using PageOne.Models;
-using PageOne.Models.Players;
 using static PageOne.Models.Card;
 using static PageOne.Models.Event;
 using static PageOne.Singletons.EffectManager;
@@ -44,16 +43,6 @@ namespace PageOne.Singletons
         /// <summary>捨て札。</summary>
         private Stack<Card> grave;
 
-        /// <summary>
-        /// 各ターンの公開情報。
-        /// プレイヤーのインデックス(最初の捨て札については -1)と
-        /// そのプレイヤーが取った公開行動のリストがターン毎に記録されています。
-        /// </summary>
-        private List<KeyValuePair<int, List<Event>>> history;
-
-        /// <summary>現在ターンでのターンプレイヤーの公開行動のリスト。</summary>
-        private List<Event> turnHistory;
-
         #endregion
 
         #region プロパティ
@@ -64,27 +53,6 @@ namespace PageOne.Singletons
             get
             {
                 return new Card(grave.Peek());
-            }
-        }
-
-        /// <summary>
-        /// 各ターンの公開情報。
-        /// プレイヤーのインデックス(最初の捨て札については -1)と
-        /// そのプレイヤーが取った公開行動のリストがターン毎に記録されています。
-        /// </summary>
-        public List<KeyValuePair<int, List<Event>>> History
-        {
-            get
-            {
-                // 履歴を書き換えられたくないのでコピーを渡す
-                var h = new List<KeyValuePair<int, List<Event>>>();
-                foreach (var e in history)
-                {
-                    h.Add(new KeyValuePair<int, List<Event>>(
-                        e.Key, 
-                        new List<Event>(e.Value.Select(x => new Event(x)))));
-                }
-                return h;
             }
         }
 
@@ -149,8 +117,7 @@ namespace PageOne.Singletons
             }
 
             // 履歴の初期化
-            turnHistory = new List<Event>();
-            history = new List<KeyValuePair<int, List<Event>>>();
+            HistoryManager.Instance.Init();
 
             // 捨て札の初期化
             grave = new Stack<Card>();
@@ -209,25 +176,13 @@ namespace PageOne.Singletons
             BeforeTurnAction();
 
             // ターンアクション処理
-            Card card = null;
-            var discards = turnHistory.Where(x => x.Type == EventType.Discard).ToArray();
-            if (discards.Length > 0)
-            {
-                card = discards[0].Card;
-            }
-            TurnAction(card);
+            TurnAction(HistoryManager.Instance.TurnDiscard);
 
             // ターン後処理
-            discards = turnHistory.Where(x => x.Type == EventType.Discard).ToArray();
-            if (discards.Length > 0)
-            {
-                card = discards[0].Card;
-            }
-            AfterTurnAction(card);
+            AfterTurnAction(HistoryManager.Instance.TurnDiscard);
 
             // 履歴処理
-            history.Add(new KeyValuePair<int, List<Event>>(turnPlayerIndex, new List<Event>(turnHistory)));
-            turnHistory = new List<Event>();
+            HistoryManager.Instance.Next(turnPlayerIndex);
 
             // ターン進行処理
             if (EffectManager.Instance.Type != EffectType.Quick)
@@ -285,11 +240,7 @@ namespace PageOne.Singletons
         {
             // ステータス表示
             Console.Clear();
-            foreach (var h in history)
-            {
-                Console.WriteLine($"{h.Key}");
-                Console.WriteLine($"{string.Join("\n", h.Value)}");
-            }
+            Console.WriteLine(HistoryManager.Instance);
             Console.WriteLine(Status);
 
             // カード効果を飛ばせるか確認
@@ -310,7 +261,7 @@ namespace PageOne.Singletons
                             {
                                 int index = players[turnPlayerIndex].EffectDiscloseActionDisclose();
                                 var c = hands[turnPlayerIndex].DiscloseCard(index);
-                                turnHistory.Add(new Event(EventType.Disclose, c));
+                                HistoryManager.Instance.Add(EventType.Disclose, c);
                             }
                         }
                         EffectManager.Instance.Reset();
@@ -325,7 +276,7 @@ namespace PageOne.Singletons
                         for (int i = 0; i < EffectManager.Instance.DrawNum; i++)
                         {
                             hands[turnPlayerIndex].AddCard(Draw());
-                            turnHistory.Add(new Event(EventType.Draw, null));
+                            HistoryManager.Instance.Add(EventType.Draw, null);
                         }
                         EffectManager.Instance.Reset();
                         break;
@@ -339,7 +290,7 @@ namespace PageOne.Singletons
                 if (index == -1)
                 {
                     hands[turnPlayerIndex].AddCard(Draw());
-                    turnHistory.Add(new Event(EventType.Draw, null));
+                    HistoryManager.Instance.Add(EventType.Draw, null);
                     // ステータス表示
                     Console.Clear();
                     Console.WriteLine(Status);
@@ -378,7 +329,7 @@ namespace PageOne.Singletons
                 if (index != -1)
                 {
                     giftCard = hands[turnPlayerIndex].RemoveCard(index);
-                    turnHistory.Add(new Event(EventType.Give, null));
+                    HistoryManager.Instance.Add(EventType.Give, null);
                 }
             }
             EffectManager.Instance.Update(card, giftCard);
@@ -423,9 +374,8 @@ namespace PageOne.Singletons
         {
             var card = Draw();
             card.declaredSuit = card.Suit;  // 最初の捨て札のみスートが自動設定される
-            history.Add(new KeyValuePair<int, List<Event>>(
-                -1,
-                new List<Event>() { new Event(EventType.Discard, new Card(card)) }));
+            HistoryManager.Instance.Add(EventType.Discard, card);
+            HistoryManager.Instance.Next(-1);
             grave.Push(card);
         }
 
@@ -445,7 +395,7 @@ namespace PageOne.Singletons
             {
                 throw new Exception($"{card} を捨て札にする前にスートを宣言する必要があります。");
             }
-            turnHistory.Add(new Event(EventType.Discard, new Card(card)));
+            HistoryManager.Instance.Add(EventType.Discard, card);
             card.Opened = false;
             grave.Push(card);
         }

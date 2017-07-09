@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace PageOne.Singletons
+namespace PageOne
 {
     /// <summary>
     /// 便利関数を集めた static クラスです。

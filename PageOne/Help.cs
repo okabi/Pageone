@@ -2,7 +2,7 @@
 using System.Linq;
 using PageOne.Models;
 
-namespace PageOne.Singletons
+namespace PageOne
 {
     /// <summary>
     /// ヘルプ画面を表す static クラスです。

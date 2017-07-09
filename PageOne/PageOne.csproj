@@ -49,11 +49,12 @@
     <Compile Include="Models\Card.cs" />
     <Compile Include="Singletons\EffectManager.cs" />
     <Compile Include="Singletons\GameMaster.cs" />
-    <Compile Include="Singletons\Help.cs" />
+    <Compile Include="Help.cs" />
     <Compile Include="Models\Players\PlayerHuman.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Singletons\Utility.cs" />
+    <Compile Include="Singletons\HistoryManager.cs" />
+    <Compile Include="Utility.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
