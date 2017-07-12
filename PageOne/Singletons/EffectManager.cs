@@ -179,24 +179,19 @@ namespace PageOne.Singletons
         /// <returns>カード効果を回避できるか。</returns>
         public bool Avoidable(Card card)
         {
-            var ret = false;
             switch (Type)
             {
                 case EffectType.Skip:
-                    ret = card.Number == 10;
-                    break;
+                    return card.Number == 10;
                 case EffectType.Draw:
-                    ret = card.Suit == Card.SuitType.Joker || card.Number == 1 || card.Number == 2 || card.Number == 3 ||
+                    return card.Suit == Card.SuitType.Joker || card.Number == 1 || card.Number == 2 || card.Number == 3 ||
                         (card.DeclaredSuit == Card.SuitType.Spade && card.Number == 12) || card.Number == 13;
-                    break;
                 case EffectType.QueenDraw:
-                    ret = card.Suit == Card.SuitType.Joker || card.Number == 12 || card.Number == 13;
-                    break;
+                    return card.Suit == Card.SuitType.Joker || card.Number == 12 || card.Number == 13;
                 case EffectType.Disclose:
-                    ret = card.Number == 5;
-                    break;
+                    return card.Number == 5;
             }
-            return ret;
+            return false;
         }
 
         #endregion

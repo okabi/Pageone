@@ -203,10 +203,6 @@ namespace PageOne.Singletons
         /// </summary>
         private void BeforeTurnAction()
         {
-            // ステータス表示
-            Console.Clear();
-            Console.WriteLine(Status);
-
             // カード効果に対するプレイヤーのアクションを取得
             int index = -1;
             switch (EffectManager.Instance.Type)
@@ -228,6 +224,7 @@ namespace PageOne.Singletons
             // ゲーム状態の更新
             if (index >= 0)
             {
+                // TODO: 正しく対抗できるカードを出せているか確認
                 Discard(turnPlayerIndex, index);
             }
         }
@@ -238,11 +235,6 @@ namespace PageOne.Singletons
         /// <param name="card">ターン前処理でプレイヤーが出したカード。出していないなら null。</param>
         private void TurnAction(Card card)
         {
-            // ステータス表示
-            Console.Clear();
-            Console.WriteLine(HistoryManager.Instance);
-            Console.WriteLine(Status);
-
             // カード効果を飛ばせるか確認
             var skippable = card == null ? false : EffectManager.Instance.Avoidable(card);
 
@@ -252,6 +244,7 @@ namespace PageOne.Singletons
                 switch (EffectManager.Instance.Type)
                 {
                     case EffectType.Skip:
+                        Console.WriteLine("スキップされました");
                         EffectManager.Instance.Reset();
                         return;
                     case EffectType.Disclose:
@@ -267,12 +260,14 @@ namespace PageOne.Singletons
                         EffectManager.Instance.Reset();
                         break;
                     case EffectType.Give:
+                        Console.WriteLine("カードが渡されました");
                         hands[turnPlayerIndex].AddCard(EffectManager.Instance.GiftCard);
                         EffectManager.Instance.Reset();
                         break;
                     case EffectType.Draw:
                     case EffectType.QueenDraw:
                     case EffectType.ChainOfHate:
+                        Console.WriteLine($"ドロー{EffectManager.Instance.DrawNum}！");
                         for (int i = 0; i < EffectManager.Instance.DrawNum; i++)
                         {
                             hands[turnPlayerIndex].AddCard(Draw());
@@ -291,9 +286,6 @@ namespace PageOne.Singletons
                 {
                     hands[turnPlayerIndex].AddCard(Draw());
                     HistoryManager.Instance.Add(EventType.Draw, null);
-                    // ステータス表示
-                    Console.Clear();
-                    Console.WriteLine(Status);
                     index = players[turnPlayerIndex].TurnActionAfterDraw();
                 }
                 if (index >= 0)
@@ -309,10 +301,6 @@ namespace PageOne.Singletons
         /// <param name="card">このターンでプレイヤーが出したカード。出していないなら null。</param>
         private void AfterTurnAction(Card card)
         {
-            // ステータス表示
-            Console.Clear();
-            Console.WriteLine(Status);
-
             // カードを出していない場合はカード効果が消える
             if (card == null)
             {
@@ -325,6 +313,7 @@ namespace PageOne.Singletons
             if (card.Number == 7)
             {
                 // 7を出した場合は渡すカードを決める
+                Console.WriteLine("渡すカードを選んでください");
                 var index = players[turnPlayerIndex].EffectGiveAction();
                 if (index != -1)
                 {

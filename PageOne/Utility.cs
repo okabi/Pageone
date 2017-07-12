@@ -36,7 +36,6 @@ namespace PageOne
                     {
                         throw new Exception();
                     }
-                    Console.Clear();
                     return number;
                 }
                 catch (Exception)

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using PageOne.Models;
 
@@ -24,6 +25,7 @@ namespace PageOne
                 option.Add(2, "手札のカード効果");
                 option.Add(99, "ヘルプ終わり");
                 int input = Utility.ReadNumber("ヘルプ", option);
+                Console.Clear();
                 if (input == 1)
                 {
                     Rule();
@@ -167,6 +169,7 @@ namespace PageOne
                 }
                 option.Add(99, "読むのをやめる");
                 int input = Utility.ReadNumber(message, option, defaultNumber);
+                Console.Clear();
                 if (input == 1)
                 {
                     i--;
@@ -194,6 +197,7 @@ namespace PageOne
                     cards.ToDictionary(x => x.Key + 1, x => x.Value.ToString()));
                 option.Add(99, "トップに戻る");
                 int input = Utility.ReadNumber("手札のカード効果ヘルプ", option);
+                Console.Clear();
                 if (input == 99)
                 {
                     break;

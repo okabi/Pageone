@@ -48,7 +48,7 @@ namespace PageOne.Models.Players
         /// <returns>変更するスート。ただし、ジョーカー以外にしてください。</returns>
         public override SuitType SelectSuit()
         {
-            return SuitType.Spade;
+            return SelectDeclaredSuit();
         }
 
         /// <summary>
@@ -58,7 +58,8 @@ namespace PageOne.Models.Players
         /// <returns>このターンに出す手札のインデックス。何もせず効果を受ける場合は -1 を返します</returns>
         public override int EffectSkipAction(int drawNum)
         {
-            return -1;
+            Console.WriteLine("スキップ効果に対抗しますか？");
+            return SelectTurnAction(false);
         }
 
         /// <summary>
@@ -68,7 +69,8 @@ namespace PageOne.Models.Players
         /// <returns>このターンに出す手札のインデックス。何もせず効果を受ける場合は -1 を返します。</returns>
         public override int EffectDrawAction(int drawNum)
         {
-            return -1;
+            Console.WriteLine("ドロー効果に対抗しますか？");
+            return SelectTurnAction(false);
         }
 
         /// <summary>
@@ -78,7 +80,8 @@ namespace PageOne.Models.Players
         /// <returns>このターンに出す手札のインデックス。何もせず効果を受ける場合は -1 を返します。</returns>
         public override int EffectQueenDrawAction(int drawNum)
         {
-            return -1;
+            Console.WriteLine("凶ドロー効果に対抗しますか？");
+            return SelectTurnAction(false);
         }
 
         /// <summary>
@@ -87,7 +90,8 @@ namespace PageOne.Models.Players
         /// <returns>このターンに出す手札のインデックス。何もせず効果を受ける場合は -1 を返します。</returns>
         public override int EffectDiscloseActionDiscard()
         {
-            return -1;
+            Console.WriteLine("プライバシーの権利を行使しますか？");
+            return SelectTurnAction(false);
         }
 
         /// <summary>
@@ -96,14 +100,8 @@ namespace PageOne.Models.Players
         /// <returns>公開する手札のインデックス。</returns>
         public override int EffectDiscloseActionDisclose()
         {
-            for (int i = 0; i < Cards.Count; i++)
-            {
-                if (!Cards[i].Opened)
-                {
-                    return i;
-                }
-            }
-            return 0;
+            Console.WriteLine("公開する手札を選択してください");
+            return SelectTurnAction(false);
         }
 
         /// <summary>
@@ -112,7 +110,8 @@ namespace PageOne.Models.Players
         /// <returns>渡す手札のインデックス。何も渡さない場合は -1 を返します。</returns>
         public override int EffectGiveAction()
         {
-            return -1;
+            Console.WriteLine("7渡しする手札を選択してください");
+            return SelectTurnAction(false);
         }
 
         #endregion
@@ -128,6 +127,7 @@ namespace PageOne.Models.Players
         {
             while (true)
             {
+                Console.WriteLine(GameMaster.Instance.Status);
                 var option = new Dictionary<int, string>(
                     Option.ToDictionary(x => x.Key + 1, x => x.Value.ToString()));
                 option.Add(88, drawable ? "カードを引く" : "パスする");
@@ -142,12 +142,34 @@ namespace PageOne.Models.Players
                 else if (input == 99)
                 {
                     Help.Top(UnvalidatedOption);
-                    Console.WriteLine(GameMaster.Instance.Status);
                 }
                 else
                 {
                     return input - 1;
                 }
+            }
+        }
+
+        /// <summary>
+        /// プレイヤーに、出したカードのスートを決定させます。
+        /// </summary>
+        /// <returns>決定したスート。</returns>
+        private SuitType SelectDeclaredSuit()
+        {
+            while (true)
+            {
+                var option = new Dictionary<int, string>()
+                {
+                    { 1, "スペード" },
+                    { 2, "クローバー" },
+                    { 3, "ダイヤ" },
+                    { 4, "ハート" }
+                };
+                int input = Utility.ReadNumber($"宣言スートを選択してください。", option);
+                return
+                    input == 1 ? SuitType.Spade :
+                    input == 2 ? SuitType.Club :
+                    input == 3 ? SuitType.Diamond : SuitType.Heart;
             }
         }
 
