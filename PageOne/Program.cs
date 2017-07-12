@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using PageOne.Models;
 using PageOne.Models.Players;
@@ -18,21 +19,28 @@ namespace PageOne
         /// <param name="args">コマンドライン引数。</param>
         static void Main(string[] args)
         {
-            // 初期設定
-            var players = Init();
-
-            // ゲームの開始
-            var ranking = GameMaster.Instance.Run(players);
-
-            // 結果の表示
-            Console.Clear();
-            Console.WriteLine(GameMaster.Instance.Status);
-            Console.WriteLine("結果発表");
-            foreach (var r in ranking)
+            try
             {
-                Console.WriteLine($"{r.Value}位: {r.Key}");
+                // 初期設定
+                var players = Init();
+
+                // ゲームの開始
+                var ranking = GameMaster.Instance.Run(players);
+
+                // 結果の表示
+                Console.Clear();
+                Console.WriteLine(GameMaster.Instance.Status);
+                Console.WriteLine("結果発表");
+                foreach (var r in ranking)
+                {
+                    Console.WriteLine($"{r.Value}位: {r.Key}");
+                }
+                Console.ReadKey();
             }
-            Console.ReadKey();
+            catch (Exception e)
+            {
+                File.AppendAllText("log.txt", $"{DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss")} - {e.Message}\n{e.StackTrace}\n");
+            }
         }
 
         /// <summary>
