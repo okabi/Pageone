@@ -86,7 +86,7 @@ namespace PageOne.Models
                 throw new Exception($"{cards[index]} は既に公開されています。");
             }
             cards[index].Opened = true;
-            return cards[index];
+            return new Card(cards[index]);
         }
 
         #endregion

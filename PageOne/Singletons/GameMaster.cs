@@ -31,6 +31,16 @@ namespace PageOne.Singletons
         /// <summary>現在のターンプレイヤーを示すインデックス。</summary>
         private int turnPlayerIndex;
 
+        /// <summary>
+        /// ドロー効果中に手札を0枚にした、おそらく上がりになるプレイヤーのリスト。
+        /// 先に手札が0枚になったプレイヤーほど先に登録される。
+        /// ドロー効果が発動した後にも手札が0枚だった場合は、確定の上がりになる。
+        /// </summary>
+        private List<int> maybeClearPlayers;
+
+        /// <summary>プレイヤー名をキーとした、順位の辞書。</summary>
+        private Dictionary<string, int> ranking;
+
         /// <summary>プレイヤー。</summary>
         private List<Player> players;
 
@@ -46,6 +56,15 @@ namespace PageOne.Singletons
         #endregion
 
         #region プロパティ
+
+        /// <summary>山札の枚数。</summary>
+        public int DeckCount
+        {
+            get
+            {
+                return deck.Count;
+            }
+        }
 
         /// <summary>捨て札の一番上のカード。</summary>
         public Card TopOfGrave
@@ -69,6 +88,29 @@ namespace PageOne.Singletons
             }
         }
 
+        /// <summary>プレイヤーの名前をキーとした、各プレイヤーの手札の公開情報。非公開カードは null として格納されます。</summary>
+        public Dictionary<string, List<Card>> Cards
+        {
+            get
+            {
+                var ret = new Dictionary<string, List<Card>>();
+                for (int i = 0; i < players.Count; i++)
+                {
+                    ret[players[i].Name] = hands[i].Cards.Select(x => x.Opened ? x : null).ToList();
+                }
+                return ret;
+            }
+        }
+
+        /// <summary>全員の順位が決定してゲームが終了しているか。</summary>
+        public bool IsGameEnd
+        {
+            get
+            {
+                return ranking.Count == players.Count;
+            }
+        }
+
         #endregion
 
         #region public メソッド
@@ -77,11 +119,26 @@ namespace PageOne.Singletons
         /// ゲームを初期化して開始します。
         /// </summary>
         /// <param name="names">参加プレイヤーのリスト。</param>
-        public void Run(List<Player> players)
+        /// <returns>プレイヤー名をキーとした、順位の辞書。</returns>
+        public Dictionary<string, int> Run(List<Player> players)
         {
+            // 名前の被りを確認
+            for (int i = 0; i < players.Count; i++)
+            {
+                for (int j = i + 1; j < players.Count; j++)
+                {
+                    if (players[i].Name == players[j].Name)
+                    {
+                        throw new Exception("プレイヤー名は一意である必要があります。");
+                    }
+                }
+            }
+
             // 変数の初期化
             this.players = players;
             turnPlayerIndex = 0;
+            maybeClearPlayers = new List<int>();
+            ranking = new Dictionary<string, int>();
             
             // デッキの初期化
             deck = new Stack<Card>();
@@ -126,8 +183,7 @@ namespace PageOne.Singletons
             // ゲームループ
             while (true)
             {
-                Console.Clear();
-                Next();
+                if (Next()) return ranking;
             }
         }
 
@@ -170,16 +226,20 @@ namespace PageOne.Singletons
         /// <summary>
         /// 1ターン進めます。
         /// </summary>
-        private void Next()
+        /// <returns>ゲームが終了したか。</returns>
+        private bool Next()
         {
             // ターン前処理
             BeforeTurnAction();
+            if (IsGameEnd) return true;
 
             // ターンアクション処理
             TurnAction(HistoryManager.Instance.TurnDiscard);
+            if (IsGameEnd) return true;
 
             // ターン後処理
             AfterTurnAction(HistoryManager.Instance.TurnDiscard);
+            if (IsGameEnd) return true;
 
             // 履歴処理
             HistoryManager.Instance.Next(turnPlayerIndex);
@@ -187,15 +247,19 @@ namespace PageOne.Singletons
             // ターン進行処理
             if (EffectManager.Instance.Type != EffectType.Quick)
             {
-                if (EffectManager.Instance.Reversing)
+                do
                 {
-                    turnPlayerIndex = (turnPlayerIndex + players.Count - 1) % players.Count;
-                }
-                else
-                {
-                    turnPlayerIndex = (turnPlayerIndex + 1) % players.Count;
-                }
+                    if (EffectManager.Instance.Reversing)
+                    {
+                        turnPlayerIndex = (turnPlayerIndex + players.Count - 1) % players.Count;
+                    }
+                    else
+                    {
+                        turnPlayerIndex = (turnPlayerIndex + 1) % players.Count;
+                    }
+                } while (hands[turnPlayerIndex].Cards.Count == 0);
             }
+            return false;
         }
 
         /// <summary>
@@ -224,8 +288,14 @@ namespace PageOne.Singletons
             // ゲーム状態の更新
             if (index >= 0)
             {
-                // TODO: 正しく対抗できるカードを出せているか確認
+                var card = hands[turnPlayerIndex].Cards[index];
+                if (!EffectManager.Instance.Avoidable(card))
+                {
+                    throw new Exception($"{TopOfGrave} の効果は {card} では防げません。");
+                }
+                players[turnPlayerIndex].DiscardAction(hands[turnPlayerIndex].Cards[index]);
                 Discard(turnPlayerIndex, index);
+                if (IsGameEnd) return;
             }
         }
 
@@ -244,8 +314,6 @@ namespace PageOne.Singletons
                 switch (EffectManager.Instance.Type)
                 {
                     case EffectType.Skip:
-                        Console.WriteLine("スキップされました");
-                        EffectManager.Instance.Reset();
                         return;
                     case EffectType.Disclose:
                         for (int i = 0; i < 2; i++)
@@ -254,23 +322,32 @@ namespace PageOne.Singletons
                             {
                                 int index = players[turnPlayerIndex].EffectDiscloseActionDisclose();
                                 var c = hands[turnPlayerIndex].DiscloseCard(index);
+                                c.Opened = false;
+                                players[turnPlayerIndex].DiscloseAction(c);
                                 HistoryManager.Instance.Add(EventType.Disclose, c);
                             }
                         }
                         EffectManager.Instance.Reset();
                         break;
                     case EffectType.Give:
-                        Console.WriteLine("カードが渡されました");
                         hands[turnPlayerIndex].AddCard(EffectManager.Instance.GiftCard);
+                        players[turnPlayerIndex].ReceiveAction(new Card(EffectManager.Instance.GiftCard));
                         EffectManager.Instance.Reset();
                         break;
                     case EffectType.Draw:
                     case EffectType.QueenDraw:
                     case EffectType.ChainOfHate:
-                        Console.WriteLine($"ドロー{EffectManager.Instance.DrawNum}！");
+                        players[turnPlayerIndex].DrawAction(EffectManager.Instance.DrawNum);
                         for (int i = 0; i < EffectManager.Instance.DrawNum; i++)
                         {
-                            hands[turnPlayerIndex].AddCard(Draw());
+                            var c = Draw();
+                            if (c == null)
+                            {
+                                // カードを引けなかったらゲーム終了
+                                CheckClearPlayers();
+                                return;
+                            }
+                            hands[turnPlayerIndex].AddCard(c);
                             HistoryManager.Instance.Add(EventType.Draw, null);
                         }
                         EffectManager.Instance.Reset();
@@ -284,13 +361,23 @@ namespace PageOne.Singletons
                 var index = players[turnPlayerIndex].TurnAction();
                 if (index == -1)
                 {
-                    hands[turnPlayerIndex].AddCard(Draw());
+                    players[turnPlayerIndex].DrawAction(1);
+                    var c = Draw();
+                    if (c == null)
+                    {
+                        // カードを引けなかったらゲーム終了
+                        CheckClearPlayers();
+                        return;
+                    }
+                    hands[turnPlayerIndex].AddCard(c);
                     HistoryManager.Instance.Add(EventType.Draw, null);
                     index = players[turnPlayerIndex].TurnActionAfterDraw();
                 }
                 if (index >= 0)
                 {
+                    players[turnPlayerIndex].DiscardAction(hands[turnPlayerIndex].Cards[index]);
                     Discard(turnPlayerIndex, index);
+                    if (IsGameEnd) return;
                 }
             }
         }
@@ -310,18 +397,26 @@ namespace PageOne.Singletons
 
             // カード効果を記録して次ターンに持ち込む
             Card giftCard = null;
-            if (card.Number == 7)
+            if (card.Number == 7 && hands[turnPlayerIndex].Cards.Count > 0)
             {
                 // 7を出した場合は渡すカードを決める
-                Console.WriteLine("渡すカードを選んでください");
                 var index = players[turnPlayerIndex].EffectGiveAction();
                 if (index != -1)
                 {
                     giftCard = hands[turnPlayerIndex].RemoveCard(index);
+                    players[turnPlayerIndex].GiveAction(new Card(giftCard));
                     HistoryManager.Instance.Add(EventType.Give, null);
+                    if (hands[turnPlayerIndex].Cards.Count == 1)
+                    {
+                        // ページワン宣言
+                        players[turnPlayerIndex].PageOneAction();
+                    }
                 }
             }
             EffectManager.Instance.Update(card, giftCard);
+
+            // ゲーム終了判定
+            CheckClearPlayers();
         }
 
         #endregion
@@ -340,7 +435,6 @@ namespace PageOne.Singletons
                 if (grave.Count <= 1)
                 {
                     // 捨て札が1枚以下の場合、ゲーム終了
-                    // TODO: ゲーム終了処理
                     return null;
                 }
                 // 捨て札のトップ以外の捨て札を新たな山札とする
@@ -382,10 +476,34 @@ namespace PageOne.Singletons
             }
             if (card.DeclaredSuit == SuitType.Joker)
             {
-                card.DeclaredSuit = players[playerIndex].SelectSuit();
+                card.DeclaredSuit = players[playerIndex].SelectSuitAction();
                 if (card.DeclaredSuit == SuitType.Joker)
                 {
                     throw new Exception($"{card} の宣言スートがジョーカーになっています。");
+                }
+            }
+            if (hands[playerIndex].Cards.Count == 1)
+            {
+                // ページワン宣言
+                players[playerIndex].PageOneAction();
+            }
+            if (hands[playerIndex].Cards.Count == 0)
+            {
+                // ジョーカー上がりの確認
+                if (card.Suit == SuitType.Joker)
+                {
+                    players[playerIndex].DrawAction(5);
+                    for (int i = 0; i < 5; i++)
+                    {
+                        var c = Draw();
+                        if (c == null)
+                        {
+                            // カードを引けなかったらゲーム終了
+                            CheckClearPlayers();
+                            return;
+                        }
+                        hands[playerIndex].AddCard(c);
+                    }
                 }
             }
             HistoryManager.Instance.Add(EventType.Discard, card);
@@ -408,9 +526,74 @@ namespace PageOne.Singletons
             while (d.Count > 0)
             {
                 int idx = random.Next(d.Count);
-                deck.Push(d[idx]);
+                deck.Push(new Card(d[idx].Suit, d[idx].Number));
                 d.RemoveAt(idx);
             }
+        }
+
+        /// <summary>
+        /// 現在の手札状況やカード効果、山札と捨て札の枚数からクリア状況を更新します。
+        /// </summary>
+        /// <returns>ゲーム終了条件が満たされているか。</returns>
+        private bool CheckClearPlayers()
+        {
+            var nextRank = ranking.Count == 0 ? 1 : ranking.Max(x => x.Value) + 1;
+
+            if (deck.Count == 0 && grave.Count == 1)
+            {
+                // 山札が無く捨て札が1枚の場合、残りのプレイヤーを同率最下位としてゲーム終了
+                foreach (var p in players)
+                {
+                    if (!ranking.ContainsKey(p.Name))
+                    {
+                        ranking[p.Name] = nextRank;
+                    }
+                }
+                return true;
+            }
+            else if (EffectManager.Instance.DrawNum > 0)
+            {
+                // ドロー効果発動中の場合は、残りのプレイヤーの中で手札が0枚になった人は上がり候補となる
+                for (int i = 0; i < players.Count; i++)
+                {
+                    if (!ranking.ContainsKey(players[i].Name) && hands[i].Cards.Count == 0 && !maybeClearPlayers.Contains(i))
+                    {
+                        maybeClearPlayers.Add(i);
+                    }
+                }
+            }
+            else
+            {
+                // それ以外のときで手札が0枚になっているプレイヤーは上がり
+                // 先に手札を出し切っていた人の方が順位は上
+                foreach (var m in maybeClearPlayers)
+                {
+                    if (hands[m].Cards.Count == 0)
+                    {
+                        ranking[players[m].Name] = nextRank;
+                        players[m].ClearAction(nextRank);
+                        nextRank++;
+                    }
+                }
+                maybeClearPlayers = new List<int>();
+                for (int i = 0; i < players.Count; i++)
+                {
+                    if (!ranking.ContainsKey(players[i].Name) && hands[i].Cards.Count == 0)
+                    {
+                        ranking[players[i].Name] = nextRank;
+                        players[i].ClearAction(nextRank);
+                        nextRank++;
+                    }
+                }
+            }
+            // 残りプレイヤーが1人になっていたらその人は最下位となりゲーム終了
+            if (ranking.Count == players.Count - 1)
+            {
+                var loser = players[hands.Select((x, i) => x.Cards.Count > 0 ? i : -1).Where(x => x >= 0).ToArray()[0]].Name;
+                ranking[loser] = nextRank;
+                return true;
+            }
+            return false;
         }
 
         #endregion

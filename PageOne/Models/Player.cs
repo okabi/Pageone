@@ -20,7 +20,7 @@ namespace PageOne.Models
 
         #region プロパティ
 
-        /// <summary>プレイヤー名。</summary>
+        /// <summary>一意なプレイヤー名。</summary>
         public string Name { get; private set; }
 
         /// <summary>名前と手札の状態を表す文字列。</summary>
@@ -111,6 +111,47 @@ namespace PageOne.Models
         #region 仮想 public メソッド
 
         /// <summary>
+        /// ページワン(残り手札1枚)になったときに呼ばれるメソッドです。
+        /// </summary>
+        public virtual void PageOneAction() { }
+
+        /// <summary>
+        /// 上がったときに呼ばれるメソッドです。
+        /// </summary>
+        /// <param name="rank">順位。</param>
+        public virtual void ClearAction(int rank) { }
+        
+        /// <summary>
+        /// カードを山札から引くときに呼ばれるメソッドです。
+        /// </summary>
+        /// <param name="drawNum">山札から引く枚数。</param>
+        public virtual void DrawAction(int drawNum) { }
+
+        /// <summary>
+        /// カードを出すときに呼ばれるメソッドです。
+        /// </summary>
+        /// <param name="card">出すカード。</param>
+        public virtual void DiscardAction(Card card) { }
+
+        /// <summary>
+        /// カードを公開するときに呼ばれるメソッドです。
+        /// </summary>
+        /// <param name="card">公開するカード。</param>
+        public virtual void DiscloseAction(Card card) { }
+
+        /// <summary>
+        /// カードを渡すときに呼ばれるメソッドです。
+        /// </summary>
+        /// <param name="card">渡すカード。</param>
+        public virtual void GiveAction(Card card) { }
+
+        /// <summary>
+        /// カードを渡されるときに呼ばれるメソッドです。
+        /// </summary>
+        /// <param name="card">渡されるカード。</param>
+        public virtual void ReceiveAction(Card card) { }
+
+        /// <summary>
         /// 1枚ドローしていない状態で、このターンに出すカードを決定して返します。
         /// </summary>
         /// <returns>このターンに出す手札のインデックス。カードを引く場合は -1 を返します。</returns>
@@ -133,7 +174,7 @@ namespace PageOne.Models
         /// 変更するスートを決定して返します。
         /// </summary>
         /// <returns>変更するスート。ただし、ジョーカー以外にしてください。</returns>
-        public virtual SuitType SelectSuit()
+        public virtual SuitType SelectSuitAction()
         {
             return SuitType.Spade;
         }
@@ -142,7 +183,7 @@ namespace PageOne.Models
         /// スキップが回ってきたときに取る行動を決定して返します。
         /// </summary>
         /// <param name="drawNum">ドロー効果中の場合は、ドロー枚数。</param>
-        /// <returns>このターンに出す手札のインデックス。何もせず効果を受ける場合は -1 を返します</returns>
+        /// <returns>このターンに出す対抗可能な手札のインデックス。何もせず効果を受ける場合は -1 を返します</returns>
         public virtual int EffectSkipAction(int drawNum)
         {
             return -1;
@@ -152,7 +193,7 @@ namespace PageOne.Models
         /// ドロー効果が回ってきたときに取る行動を決定して返します。
         /// </summary>
         /// <param name="drawNum">ドロー枚数。</param>
-        /// <returns>このターンに出す手札のインデックス。何もせず効果を受ける場合は -1 を返します。</returns>
+        /// <returns>このターンに出す対抗可能な手札のインデックス。何もせず効果を受ける場合は -1 を返します。</returns>
         public virtual int EffectDrawAction(int drawNum)
         {
             return -1;
@@ -162,7 +203,7 @@ namespace PageOne.Models
         /// 凶ドロー効果が回ってきたときに取る行動を決定して返します。
         /// </summary>
         /// <param name="drawNum">ドロー枚数。</param>
-        /// <returns>このターンに出す手札のインデックス。何もせず効果を受ける場合は -1 を返します。</returns>
+        /// <returns>このターンに出す対抗可能な手札のインデックス。何もせず効果を受ける場合は -1 を返します。</returns>
         public virtual int EffectQueenDrawAction(int drawNum)
         {
             return -1;
@@ -171,7 +212,7 @@ namespace PageOne.Models
         /// <summary>
         /// 知る権利が回ってきたときに出せる 5 のカードを持っていた場合に取る行動を決定して返します。
         /// </summary>
-        /// <returns>このターンに出す手札のインデックス。何もせず効果を受ける場合は -1 を返します。</returns>
+        /// <returns>このターンに出す対抗可能な手札のインデックス。何もせず効果を受ける場合は -1 を返します。</returns>
         public virtual int EffectDiscloseActionDiscard()
         {
             return -1;

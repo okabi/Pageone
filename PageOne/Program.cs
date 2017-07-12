@@ -22,7 +22,17 @@ namespace PageOne
             var players = Init();
 
             // ゲームの開始
-            GameMaster.Instance.Run(players);
+            var ranking = GameMaster.Instance.Run(players);
+
+            // 結果の表示
+            Console.Clear();
+            Console.WriteLine(GameMaster.Instance.Status);
+            Console.WriteLine("結果発表");
+            foreach (var r in ranking)
+            {
+                Console.WriteLine($"{r.Value}位: {r.Key}");
+            }
+            Console.ReadKey();
         }
 
         /// <summary>

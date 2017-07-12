@@ -115,6 +115,11 @@ namespace PageOne.Singletons
         /// <param name="giftCard">7渡しで次のプレイヤーに渡されるカード。</param>
         public void Update(Card card, Card giftCard = null)
         {
+            if (card.Suit == Card.SuitType.Joker)
+            {
+                DrawNum = 0;
+                CardTwoNum = 0;
+            }
             switch (card.Number)
             {
                 case 1:
@@ -137,7 +142,7 @@ namespace PageOne.Singletons
                 case 7:
                     if (giftCard == null)
                     {
-                        Init();
+                        Type = EffectType.None;
                     }
                     else
                     {
@@ -161,13 +166,17 @@ namespace PageOne.Singletons
                     Type = Type == EffectType.QueenDraw ? EffectType.QueenDraw : EffectType.None;
                     break;
                 case 13:
-                    if (Type == EffectType.Draw || Type == EffectType.QueenDraw)
+                    if (DrawNum > 0)
                     {
                         DrawNum += 1;
                     }
+                    else
+                    {
+                        Type = EffectType.None;
+                    }
                     break;
                 default:
-                    Init();
+                    Type = EffectType.None;
                     break;
             }
         }
