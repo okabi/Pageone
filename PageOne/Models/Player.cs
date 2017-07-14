@@ -23,15 +23,6 @@ namespace PageOne.Models
         /// <summary>一意なプレイヤー名。</summary>
         public string Name { get; private set; }
 
-        /// <summary>名前と手札の状態を表す文字列。</summary>
-        public string Status
-        {
-            get
-            {
-                return $"{Name}: " + string.Join(" ", hand.Cards.Select(x => $"{x, 5}"));
-            }
-        }
-
         /// <summary>非公開カードが手札に含まれるか。</summary>
         public bool Disclosable
         {
@@ -73,6 +64,41 @@ namespace PageOne.Models
                     .ToDictionary(x => x.Index, x => x.Item);
             }
         }
+
+        /// <summary>現在受けているカード効果を防ぐことのできる手札の選択肢を表す辞書。</summary>
+        protected Dictionary<int, Card> EffectAvoidableOption
+        {
+            get
+            {
+                return Option
+                .Where(x => EffectManager.Instance.Avoidable(x.Value))
+                .ToDictionary(x => x.Key, x => x.Value);
+            }
+        }
+
+        /// <summary>知る権利を要求された際の手札の選択肢を表す、現在非公開の手札を表す辞書。</summary>
+        protected Dictionary<int, Card> DiscloseOption
+        {
+            get
+            {
+                return UnvalidatedOption
+                    .Where(x => !x.Value.Opened)
+                    .ToDictionary(x => x.Key, x => x.Value);
+            }
+        }
+
+        #region 仮想プロパティ
+
+        /// <summary>名前と手札の状態を表す文字列。</summary>
+        public virtual string Status
+        {
+            get
+            {
+                return $"{Name}: " + string.Join(" ", hand.Cards.Select(x => $"{x,5}"));
+            }
+        }
+
+        #endregion
 
         #endregion
 

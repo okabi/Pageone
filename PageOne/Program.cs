@@ -13,6 +13,8 @@ namespace PageOne
     /// </summary>
     class Program
     {
+        #region エントリポイント
+
         /// <summary>
         /// エントリポイントです。
         /// </summary>
@@ -22,7 +24,9 @@ namespace PageOne
             try
             {
                 // 初期設定
-                var players = Init();
+                // var players = Init(); // 全員操作プレイヤー
+                // var players = Init2();   // 全員コンちゃん
+                var players = Init3();// 1P操作プレイヤー、その他コンちゃん
 
                 // ゲームの開始
                 var ranking = GameMaster.Instance.Run(players);
@@ -43,8 +47,12 @@ namespace PageOne
             }
         }
 
+        #endregion
+
+        #region 初期化メソッド
+
         /// <summary>
-        /// ゲームの初期設定です。
+        /// 全員操作プレイヤーにする場合の、ゲームの初期設定です。
         /// </summary>
         /// <returns>設定されたプレイヤーのリスト。</returns>
         static List<Player> Init()
@@ -81,5 +89,87 @@ namespace PageOne
             // プレイヤーインスタンスを生成して返す
             return names.Select(x => new PlayerHuman(x) as Player).ToList();
         }
+
+        /// <summary>
+        /// 全員コンちゃんにする場合の、ゲームの初期設定です。
+        /// </summary>
+        /// <returns>設定されたプレイヤーのリスト。</returns>
+        static List<Player> Init2()
+        {
+            // プレイヤー人数の設定
+            int playerNum;
+            while (true)
+            {
+                Console.Write("コンちゃんの人数を入力してください: ");
+                try
+                {
+                    playerNum = int.Parse(Console.ReadLine());
+                }
+                catch (FormatException)
+                {
+                    Console.Error.WriteLine("整数を入力してください。");
+                    continue;
+                }
+                if (playerNum >= 2 && playerNum <= 8)
+                {
+                    break;
+                }
+                Console.Error.WriteLine("2 人 ～ 8 人を入力してください。");
+            }
+
+            // プレイヤー名の設定
+            var names = new List<string>(playerNum);
+            for (int i = 0; i < playerNum; i++)
+            {
+                Console.Write($"コンちゃん {i + 1} の名前を入力してください: ");
+                names.Add(Console.ReadLine());
+            }
+
+            // プレイヤーインスタンスを生成して返す
+            return names.Select(x => new PlayerAI(x, true, true) as Player).ToList();
+        }
+
+        /// <summary>
+        /// 1Pプレイヤー、その他コンちゃんにする場合の、ゲームの初期設定です。
+        /// </summary>
+        /// <returns>設定されたプレイヤーのリスト。</returns>
+        static List<Player> Init3()
+        {
+            // プレイヤー人数の設定
+            int playerNum;
+            while (true)
+            {
+                Console.Write("コンちゃんの人数を入力してください: ");
+                try
+                {
+                    playerNum = int.Parse(Console.ReadLine());
+                }
+                catch (FormatException)
+                {
+                    Console.Error.WriteLine("整数を入力してください。");
+                    continue;
+                }
+                if (playerNum >= 2 && playerNum <= 7)
+                {
+                    break;
+                }
+                Console.Error.WriteLine("2 人 ～ 7 人を入力してください。");
+            }
+
+            // プレイヤー名の設定
+            var names = new List<string>(playerNum + 1);
+            Console.Write($"プレイヤーの名前を入力してください: ");
+            names.Add(Console.ReadLine());
+            for (int i = 0; i < playerNum; i++)
+            {
+                Console.Write($"コンちゃん {i + 1} の名前を入力してください: ");
+                names.Add(Console.ReadLine());
+            }
+
+            // プレイヤーインスタンスを生成して返す
+            return names.Select((x, i) => i == 0 ? new PlayerHuman(x) : new PlayerAI(x, true, false) as Player).ToList();
+        }
+
+        #endregion
     }
 }

@@ -47,6 +47,7 @@
     <Compile Include="Models\Hand.cs" />
     <Compile Include="Models\Player.cs" />
     <Compile Include="Models\Card.cs" />
+    <Compile Include="Models\Players\PlayerAI.cs" />
     <Compile Include="Singletons\EffectManager.cs" />
     <Compile Include="Singletons\GameMaster.cs" />
     <Compile Include="Help.cs" />

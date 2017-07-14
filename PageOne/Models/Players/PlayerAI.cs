@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using PageOne.Singletons;
@@ -8,24 +7,61 @@ using static PageOne.Models.Card;
 namespace PageOne.Models.Players
 {
     /// <summary>
-    /// 操作するプレイヤーです。
+    /// コンちゃんです。
     /// </summary>
-    public class PlayerHuman : Player
+    public class PlayerAI : Player
     {
         #region フィールド
 
         /// <summary>コンソール表示にかけるウェイトミリ秒。</summary>
-        private const int WaitTime = 800;
+        private const int WaitTime = 1200;
+
+        /// <summary>コンソール表示するか。</summary>
+        private bool isDebug;
+
+        /// <summary>常に手札を公開するか。</summary>
+        private bool showStatus;
+
+        /// <summary>乱数生成器。</summary>
+        private Random random;
+
+        #endregion
+
+        #region 仮想プロパティ
+
+        /// <summary>名前と手札の状態を表す文字列。</summary>
+        public override string Status
+        {
+            get
+            {
+                if (showStatus)
+                {
+                    return base.Status;
+                }
+                else
+                {
+                    return $"{Name}: 手札合計 {UnvalidatedOption.Count} 枚、公開カード: " +
+                        string.Join(" ", UnvalidatedOption.Where(x => x.Value.Opened).Select(x => x.Value));
+                }
+            }
+        }
 
         #endregion
 
         #region コンストラクタ
 
         /// <summary>
-        /// 操作するプレイヤーを作成します。
+        /// コンちゃんを作成します。
         /// </summary>
         /// <param name="name">プレイヤー名。</param>
-        public PlayerHuman(string name) : base(name) { }
+        /// <param name="isDebug">コンソール表示するか。</param>
+        /// <param name="showStatus">常に手札を公開するか。</param>
+        public PlayerAI(string name, bool isDebug, bool showStatus) : base(name)
+        {
+            this.isDebug = isDebug;
+            this.showStatus = showStatus;
+            random = new Random();
+        }
 
         #endregion
 
@@ -36,8 +72,9 @@ namespace PageOne.Models.Players
         /// </summary>
         public override void PageOneAction()
         {
+            if (!isDebug) return;
             Console.WriteLine($"{Name}「ページワン」");
-            Console.ReadKey();
+            Thread.Sleep(WaitTime);
         }
 
         /// <summary>
@@ -46,8 +83,9 @@ namespace PageOne.Models.Players
         /// <param name="rank">順位。</param>
         public override void ClearAction(int rank)
         {
+            if (!isDebug) return;
             Console.WriteLine($"{Name} は {rank} 位で上がりました！");
-            Console.ReadKey();
+            Thread.Sleep(WaitTime);
         }
 
         /// <summary>
@@ -56,6 +94,7 @@ namespace PageOne.Models.Players
         /// <param name="drawNum">山札から引く枚数。</param>
         public override void DrawAction(int drawNum)
         {
+            if (!isDebug) return;
             Console.WriteLine($"{Name} は {drawNum}枚ドローします...\n");
             Thread.Sleep(WaitTime);
         }
@@ -66,6 +105,7 @@ namespace PageOne.Models.Players
         /// <param name="card">出すカード。</param>
         public override void DiscardAction(Card card)
         {
+            if (!isDebug) return;
             Console.WriteLine($"{Name} は {card} を出しました。\n");
             Thread.Sleep(WaitTime);
         }
@@ -76,6 +116,7 @@ namespace PageOne.Models.Players
         /// <param name="card">公開するカード。</param>
         public override void DiscloseAction(Card card)
         {
+            if (!isDebug) return;
             Console.WriteLine($"{Name} は {card} を公開しました。\n");
             Thread.Sleep(WaitTime);
         }
@@ -86,6 +127,7 @@ namespace PageOne.Models.Players
         /// <param name="card">渡すカード。</param>
         public override void GiveAction(Card card)
         {
+            if (!isDebug) return;
             Console.WriteLine($"{Name} は {card} を次のプレイヤーに渡します。\n");
             Thread.Sleep(WaitTime);
         }
@@ -96,6 +138,7 @@ namespace PageOne.Models.Players
         /// <param name="card">渡されるカード。</param>
         public override void ReceiveAction(Card card)
         {
+            if (!isDebug) return;
             Console.WriteLine($"{Name} は {card} を前のプレイヤーから受け取りました。\n");
             Thread.Sleep(WaitTime);
         }
@@ -106,12 +149,15 @@ namespace PageOne.Models.Players
         /// <returns>このターンに出す手札のインデックス。カードを引く場合は -1 を返します。</returns>
         public override int TurnAction()
         {
-            Console.Clear();
-            Console.WriteLine(GameMaster.Instance.Status);
-            return SelectCard(
-                Option,
-                "出すカード または その他の行動を選択してください。",
-                "カードを引く");
+            if (isDebug)
+            {
+                Console.Clear();
+                Console.WriteLine(GameMaster.Instance.Status);
+            }
+
+            // 出せるカードをランダムに出す
+            var option = Option.Select(x => x.Key).ToArray();
+            return option.Length > 0 ? option[random.Next(option.Length)] : -1;
         }
 
         /// <summary>
@@ -120,11 +166,15 @@ namespace PageOne.Models.Players
         /// <returns>このターンに出す手札のインデックス。何もしない場合は -1 を返します。</returns>
         public override int TurnActionAfterDraw()
         {
-            Console.WriteLine(GameMaster.Instance.Status);
-            return SelectCard(
-                Option,
-                "出すカード または その他の行動を選択してください。",
-                "パスする");
+            if (isDebug)
+            {
+                Console.Clear();
+                Console.WriteLine(GameMaster.Instance.Status);
+            }
+
+            // 出せるカードをランダムに出す
+            var option = Option.Select(x => x.Key).ToArray();
+            return option.Length > 0 ? option[random.Next(option.Length)] : -1;
         }
 
         /// <summary>
@@ -134,13 +184,24 @@ namespace PageOne.Models.Players
         /// <returns>変更するスート。ただし、ジョーカー以外にしてください。</returns>
         public override SuitType SelectSuitAction()
         {
-            var suit = SelectDeclaredSuit();
+            // ランダムにスートを選ぶ
+            SuitType suit;
+            do
+            {
+                suit = Enum.GetValues(typeof(SuitType))
+                    .Cast<SuitType>()
+                    .OrderBy(x => random.Next())
+                    .First();
+            } while (suit == SuitType.Joker);
             var suitString =
                 suit == SuitType.Spade ? "スペード" :
                 suit == SuitType.Club ? "クローバー" :
                 suit == SuitType.Diamond ? "ダイヤ" : "ハート";
-            Console.WriteLine($"{Name} は {suitString} を宣言しました。\n");
-            Thread.Sleep(WaitTime);
+            if (isDebug)
+            {
+                Console.WriteLine($"{Name} は {suitString} を宣言しました。\n");
+                Thread.Sleep(WaitTime);
+            }
             return suit;
         }
 
@@ -151,18 +212,23 @@ namespace PageOne.Models.Players
         /// <returns>このターンに出す対抗可能な手札のインデックス。何もせず効果を受ける場合は -1 を返します</returns>
         public override int EffectSkipAction(int drawNum)
         {
-            Console.Clear();
-            Console.WriteLine(GameMaster.Instance.Status);
+            if (isDebug)
+            {
+                Console.Clear();
+                Console.WriteLine(GameMaster.Instance.Status);
+            }
             if (EffectAvoidableOption.Count == 0)
             {
-                Console.WriteLine("スキップ効果を受けました。\n");
-                Console.ReadKey();
+                if (isDebug)
+                {
+                    Console.WriteLine("スキップ効果を受けました。\n");
+                    Thread.Sleep(WaitTime);
+                }
                 return -1;
             }
-            return SelectCard(
-                EffectAvoidableOption,
-                "スキップ効果を受けました。\n出すカード または その他の行動を選択してください。",
-                "スキップ効果を受ける");
+
+            // 出せるカードを出す
+            return EffectAvoidableOption.First().Key;
         }
 
         /// <summary>
@@ -172,18 +238,24 @@ namespace PageOne.Models.Players
         /// <returns>このターンに出す対抗可能な手札のインデックス。何もせず効果を受ける場合は -1 を返します。</returns>
         public override int EffectDrawAction(int drawNum)
         {
-            Console.Clear();
-            Console.WriteLine(GameMaster.Instance.Status);
+            if (isDebug)
+            {
+                Console.Clear();
+                Console.WriteLine(GameMaster.Instance.Status);
+            }
             if (EffectAvoidableOption.Count == 0)
             {
-                Console.WriteLine($"ドロー{EffectManager.Instance.DrawNum}！\n");
-                Console.ReadKey();
+                if (isDebug)
+                {
+                    Console.WriteLine($"ドロー{EffectManager.Instance.DrawNum}！\n");
+                    Thread.Sleep(WaitTime);
+                }
                 return -1;
             }
-            return SelectCard(
-                EffectAvoidableOption,
-                $"ドロー効果({EffectManager.Instance.DrawNum}枚)を受けました。\n出すカード または その他の行動を選択してください。",
-                "ドロー効果を受ける");
+
+            // 出せるカードをランダムに出す
+            var option = EffectAvoidableOption.Select(x => x.Key).ToArray();
+            return option.Length > 0 ? option[random.Next(option.Length)] : -1;
         }
 
         /// <summary>
@@ -193,18 +265,24 @@ namespace PageOne.Models.Players
         /// <returns>このターンに出す対抗可能な手札のインデックス。何もせず効果を受ける場合は -1 を返します。</returns>
         public override int EffectQueenDrawAction(int drawNum)
         {
-            Console.Clear();
-            Console.WriteLine(GameMaster.Instance.Status);
+            if (isDebug)
+            {
+                Console.Clear();
+                Console.WriteLine(GameMaster.Instance.Status);
+            }
             if (EffectAvoidableOption.Count == 0)
             {
-                Console.WriteLine($"ドロー{EffectManager.Instance.DrawNum}！！\n");
-                Console.ReadKey();
+                if (isDebug)
+                {
+                    Console.WriteLine($"ドロー{EffectManager.Instance.DrawNum}！！\n");
+                    Thread.Sleep(WaitTime);
+                }
                 return -1;
             }
-            return SelectCard(
-                EffectAvoidableOption,
-                $"凶ドロー効果({EffectManager.Instance.DrawNum}枚)を受けました。\n出すカード または その他の行動を選択してください。",
-                "凶ドロー効果を受ける");
+
+            // 出せるカードをランダムに出す
+            var option = EffectAvoidableOption.Select(x => x.Key).ToArray();
+            return option.Length > 0 ? option[random.Next(option.Length)] : -1;
         }
 
         /// <summary>
@@ -213,16 +291,19 @@ namespace PageOne.Models.Players
         /// <returns>このターンに出す対抗可能な手札のインデックス。何もせず効果を受ける場合は -1 を返します。</returns>
         public override int EffectDiscloseActionDiscard()
         {
-            Console.Clear();
-            Console.WriteLine(GameMaster.Instance.Status);
+            if (isDebug)
+            {
+                Console.Clear();
+                Console.WriteLine(GameMaster.Instance.Status);
+            }
             if (EffectAvoidableOption.Count == 0)
             {
                 return -1;
             }
-            return SelectCard(
-                EffectAvoidableOption,
-                "知る権利を要求されました。\n出すカード または その他の行動を選択してください。",
-                "情報を開示する");
+
+            // 出せるカードをランダムに出す
+            var option = EffectAvoidableOption.Select(x => x.Key).ToArray();
+            return option.Length > 0 ? option[random.Next(option.Length)] : -1;
         }
 
         /// <summary>
@@ -231,9 +312,9 @@ namespace PageOne.Models.Players
         /// <returns>公開する手札のインデックス。</returns>
         public override int EffectDiscloseActionDisclose()
         {
-            return SelectCard(
-                DiscloseOption,
-                "知る権利を要求されました。\n公開する手札を選択してください。");
+            // カードをランダムに出す
+            var option = DiscloseOption.Select(x => x.Key).ToArray();
+            return option.Length > 0 ? option[random.Next(option.Length)] : -1;
         }
 
         /// <summary>
@@ -242,72 +323,9 @@ namespace PageOne.Models.Players
         /// <returns>渡す手札のインデックス。何も渡さない場合は -1 を返します。</returns>
         public override int EffectGiveAction()
         {
-            return SelectCard(
-                UnvalidatedOption,
-                "7渡しが発動しました。\n渡すカード または その他の行動を選択してください。",
-                "渡さない");
-        }
-
-        #endregion
-
-        #region private メソッド
-
-        /// <summary>
-        /// プレイヤーに出すカードを決定させます。
-        /// </summary>
-        /// <param name="option">カードの選択肢。</param>
-        /// <param name="description">表示する説明。</param>
-        /// <param name="noAction">「カードを引く」または「何もしない」に対して表示する文字列。null なら選択肢を表示しません。</param>
-        /// <returns>このターンに出す手札のインデックス。カードを引く or 何もしない場合は -1 を返します。</returns>
-        private int SelectCard(Dictionary<int, Card> option, string description, string noAction = null)
-        {
-            while (true)
-            {
-                var optionString = new Dictionary<int, string>(
-                    option.ToDictionary(x => x.Key + 1, x => x.Value.ToString()));
-                if (noAction != null)
-                {
-                    optionString.Add(88, noAction);
-                }
-                optionString.Add(99, "ヘルプ");
-                int input = Utility.ReadNumber(description, optionString);
-
-                if (input == 88)
-                {
-                    return -1;
-                }
-                else if (input == 99)
-                {
-                    Help.Top(UnvalidatedOption);
-                }
-                else
-                {
-                    return input - 1;
-                }
-            }
-        }
-
-        /// <summary>
-        /// プレイヤーに、出したカードのスートを決定させます。
-        /// </summary>
-        /// <returns>決定したスート。</returns>
-        private SuitType SelectDeclaredSuit()
-        {
-            while (true)
-            {
-                var option = new Dictionary<int, string>()
-                {
-                    { 1, "スペード" },
-                    { 2, "クローバー" },
-                    { 3, "ダイヤ" },
-                    { 4, "ハート" }
-                };
-                int input = Utility.ReadNumber($"宣言スートを選択してください。", option);
-                return
-                    input == 1 ? SuitType.Spade :
-                    input == 2 ? SuitType.Club :
-                    input == 3 ? SuitType.Diamond : SuitType.Heart;
-            }
+            // カードをランダムに渡す
+            var option = UnvalidatedOption.Select(x => x.Key).ToArray();
+            return option.Length > 0 ? option[random.Next(option.Length)] : -1;
         }
 
         #endregion
