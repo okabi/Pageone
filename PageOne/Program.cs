@@ -24,7 +24,6 @@ namespace PageOne
             try
             {
                 // CUI でゲームをプレイする場合は Play() を利用します。
-
                 // Play(Init);  // 全員操作プレイヤーの場合。
                 // Play(Init2); // 全員コンちゃんの場合。
                 // Play(Init3); // 1P操作プレイヤー、その他コンちゃんの場合。

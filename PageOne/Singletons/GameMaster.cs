@@ -53,6 +53,9 @@ namespace PageOne.Singletons
         /// <summary>捨て札。</summary>
         private Stack<Card> grave;
 
+        /// <summary>乱数生成器。</summary>
+        private Random random;
+
         #endregion
 
         #region プロパティ
@@ -140,6 +143,7 @@ namespace PageOne.Singletons
             turnPlayerIndex = 0;
             maybeClearPlayers = new List<int>();
             ranking = new Dictionary<string, int>();
+            random = new Random();
             
             // デッキの初期化
             deck = new Stack<Card>();
@@ -525,19 +529,7 @@ namespace PageOne.Singletons
         /// </summary>
         private void Shuffle()
         {
-            var random = new Random();
-            var d = new List<Card>();
-            while (deck.Count > 0)
-            {
-                d.Add(deck.Pop());
-            }
-            deck = new Stack<Card>();
-            while (d.Count > 0)
-            {
-                int idx = random.Next(d.Count);
-                deck.Push(new Card(d[idx].Suit, d[idx].Number));
-                d.RemoveAt(idx);
-            }
+            deck = new Stack<Card>(deck.OrderBy(x => random.Next()));
         }
 
         /// <summary>
