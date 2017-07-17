@@ -193,12 +193,12 @@ namespace PageOne.Models.Players
                     .OrderBy(x => random.Next())
                     .First();
             } while (suit == SuitType.Joker);
-            var suitString =
-                suit == SuitType.Spade ? "スペード" :
-                suit == SuitType.Club ? "クローバー" :
-                suit == SuitType.Diamond ? "ダイヤ" : "ハート";
             if (isDebug)
             {
+                var suitString =
+                    suit == SuitType.Spade ? "スペード" :
+                    suit == SuitType.Club ? "クローバー" :
+                    suit == SuitType.Diamond ? "ダイヤ" : "ハート";
                 Console.WriteLine($"{Name} は {suitString} を宣言しました。\n");
                 Thread.Sleep(WaitTime);
             }

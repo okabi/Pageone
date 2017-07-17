@@ -27,11 +27,11 @@ namespace PageOne
 
                 // Play(Init);  // 全員操作プレイヤーの場合。
                 // Play(Init2); // 全員コンちゃんの場合。
-                 Play(Init3); // 1P操作プレイヤー、その他コンちゃんの場合。
+                // Play(Init3); // 1P操作プレイヤー、その他コンちゃんの場合。
 
 
                 // AI 同士の対戦をシミュレートして結果だけ得る場合は Simulate() を利用します。
-                //Simulate(Init4, 10000, true);
+                Simulate(Init4, 10000, true);
 
                 // 最後にキー入力を待って終了します。
                 Console.ReadKey();

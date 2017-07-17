@@ -103,7 +103,7 @@ namespace PageOne.Singletons
         }
 
         /// <summary>全員の順位が決定してゲームが終了しているか。</summary>
-        public bool IsGameEnd
+        private bool IsGameEnd
         {
             get
             {
