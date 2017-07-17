@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using PageOne.Exceptions;
 using PageOne.Models;
 using static PageOne.Models.Card;
 using static PageOne.Models.Event;
@@ -53,6 +54,9 @@ namespace PageOne.Singletons
         /// <summary>捨て札。</summary>
         private Stack<Card> grave;
 
+        /// <summary>乱数生成器。</summary>
+        private Random random;
+
         #endregion
 
         #region プロパティ
@@ -102,15 +106,6 @@ namespace PageOne.Singletons
             }
         }
 
-        /// <summary>全員の順位が決定してゲームが終了しているか。</summary>
-        private bool IsGameEnd
-        {
-            get
-            {
-                return ranking.Count == players.Count;
-            }
-        }
-
         #endregion
 
         #region public メソッド
@@ -124,15 +119,9 @@ namespace PageOne.Singletons
         public Dictionary<string, int> Run(List<Player> players)
         {
             // 名前の被りを確認
-            for (int i = 0; i < players.Count; i++)
+            if (players.Select(x => x.Name).Distinct().Count() != players.Count)
             {
-                for (int j = i + 1; j < players.Count; j++)
-                {
-                    if (players[i].Name == players[j].Name)
-                    {
-                        throw new Exception("プレイヤー名は一意である必要があります。");
-                    }
-                }
+                throw new Exception("プレイヤー名は一意である必要があります。");
             }
 
             // 変数の初期化
@@ -140,6 +129,7 @@ namespace PageOne.Singletons
             turnPlayerIndex = 0;
             maybeClearPlayers = new List<int>();
             ranking = new Dictionary<string, int>();
+            random = new Random();
             
             // デッキの初期化
             deck = new Stack<Card>();
@@ -187,7 +177,15 @@ namespace PageOne.Singletons
             // ゲームループ
             while (true)
             {
-                if (Next()) return ranking;
+                try
+                {
+                    if (Next()) return ranking;
+                }
+                catch (DrawNullException)
+                {
+                    CheckClearPlayers();
+                    return ranking;
+                }
             }
         }
 
@@ -235,18 +233,18 @@ namespace PageOne.Singletons
         {
             // ターン前処理
             BeforeTurnAction();
-            if (IsGameEnd) return true;
 
             // ターンアクション処理
             TurnAction(HistoryManager.Instance.TurnDiscard);
-            if (IsGameEnd) return true;
 
             // ターン後処理
             AfterTurnAction(HistoryManager.Instance.TurnDiscard);
-            if (IsGameEnd) return true;
 
             // 履歴処理
             HistoryManager.Instance.Next(turnPlayerIndex);
+
+            // ゲーム終了条件を満たしていたら終了
+            if (CheckClearPlayers()) return true;
 
             // ターン進行処理
             if (EffectManager.Instance.Type != EffectType.Quick)
@@ -299,7 +297,6 @@ namespace PageOne.Singletons
                 }
                 players[turnPlayerIndex].DiscardAction(hands[turnPlayerIndex].Cards[index]);
                 Discard(turnPlayerIndex, index);
-                if (IsGameEnd) return;
             }
         }
 
@@ -344,12 +341,6 @@ namespace PageOne.Singletons
                         for (int i = 0; i < EffectManager.Instance.DrawNum; i++)
                         {
                             var c = Draw();
-                            if (c == null)
-                            {
-                                // カードを引けなかったらゲーム終了
-                                CheckClearPlayers();
-                                return;
-                            }
                             hands[turnPlayerIndex].AddCard(c);
                             HistoryManager.Instance.Add(EventType.Draw, null);
                         }
@@ -366,12 +357,6 @@ namespace PageOne.Singletons
                 {
                     players[turnPlayerIndex].DrawAction(1);
                     var c = Draw();
-                    if (c == null)
-                    {
-                        // カードを引けなかったらゲーム終了
-                        CheckClearPlayers();
-                        return;
-                    }
                     hands[turnPlayerIndex].AddCard(c);
                     HistoryManager.Instance.Add(EventType.Draw, null);
                     index = players[turnPlayerIndex].TurnActionAfterDraw();
@@ -380,7 +365,6 @@ namespace PageOne.Singletons
                 {
                     players[turnPlayerIndex].DiscardAction(hands[turnPlayerIndex].Cards[index]);
                     Discard(turnPlayerIndex, index);
-                    if (IsGameEnd) return;
                 }
             }
         }
@@ -423,9 +407,6 @@ namespace PageOne.Singletons
             {
                 EffectManager.Instance.Reset();
             }
-
-            // ゲーム終了判定
-            CheckClearPlayers();
         }
 
         #endregion
@@ -444,7 +425,7 @@ namespace PageOne.Singletons
                 if (grave.Count <= 1)
                 {
                     // 捨て札が1枚以下の場合、ゲーム終了
-                    return null;
+                    throw new DrawNullException();
                 }
                 // 捨て札のトップ以外の捨て札を新たな山札とする
                 var top = TopOfGrave;
@@ -505,12 +486,6 @@ namespace PageOne.Singletons
                     for (int i = 0; i < 5; i++)
                     {
                         var c = Draw();
-                        if (c == null)
-                        {
-                            // カードを引けなかったらゲーム終了
-                            CheckClearPlayers();
-                            return;
-                        }
                         hands[playerIndex].AddCard(c);
                     }
                 }
@@ -525,19 +500,7 @@ namespace PageOne.Singletons
         /// </summary>
         private void Shuffle()
         {
-            var random = new Random();
-            var d = new List<Card>();
-            while (deck.Count > 0)
-            {
-                d.Add(deck.Pop());
-            }
-            deck = new Stack<Card>();
-            while (d.Count > 0)
-            {
-                int idx = random.Next(d.Count);
-                deck.Push(new Card(d[idx].Suit, d[idx].Number));
-                d.RemoveAt(idx);
-            }
+            deck = new Stack<Card>(deck.OrderBy(x => random.Next()));
         }
 
         /// <summary>

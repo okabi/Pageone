@@ -43,6 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Exceptions\DrawNullException.cs" />
     <Compile Include="Models\Event.cs" />
     <Compile Include="Models\Hand.cs" />
     <Compile Include="Models\Player.cs" />

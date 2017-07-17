@@ -24,7 +24,6 @@ namespace PageOne
             try
             {
                 // CUI でゲームをプレイする場合は Play() を利用します。
-
                 // Play(Init);  // 全員操作プレイヤーの場合。
                 // Play(Init2); // 全員コンちゃんの場合。
                 // Play(Init3); // 1P操作プレイヤー、その他コンちゃんの場合。
@@ -144,11 +143,11 @@ namespace PageOne
                     Console.Error.WriteLine("整数を入力してください。");
                     continue;
                 }
-                if (playerNum >= 2 && playerNum <= 7)
+                if (playerNum >= 1 && playerNum <= 7)
                 {
                     break;
                 }
-                Console.Error.WriteLine("2 人 ～ 7 人を入力してください。");
+                Console.Error.WriteLine("1 人 ～ 7 人を入力してください。");
             }
 
             // プレイヤー名の設定
