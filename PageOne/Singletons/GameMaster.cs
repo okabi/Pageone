@@ -119,15 +119,9 @@ namespace PageOne.Singletons
         public Dictionary<string, int> Run(List<Player> players)
         {
             // 名前の被りを確認
-            for (int i = 0; i < players.Count; i++)
+            if (players.Select(x => x.Name).Distinct().Count() != players.Count)
             {
-                for (int j = i + 1; j < players.Count; j++)
-                {
-                    if (players[i].Name == players[j].Name)
-                    {
-                        throw new Exception("プレイヤー名は一意である必要があります。");
-                    }
-                }
+                throw new Exception("プレイヤー名は一意である必要があります。");
             }
 
             // 変数の初期化
