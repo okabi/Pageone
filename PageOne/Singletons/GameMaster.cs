@@ -117,8 +117,9 @@ namespace PageOne.Singletons
 
         /// <summary>
         /// ゲームを初期化して開始します。
+        /// ゲーム終了時に players の状態が変化するので、複数回呼ぶときは注意してください。
         /// </summary>
-        /// <param name="names">参加プレイヤーのリスト。</param>
+        /// <param name="players">参加プレイヤーのリスト。</param>
         /// <returns>プレイヤー名をキーとした、順位の辞書。</returns>
         public Dictionary<string, int> Run(List<Player> players)
         {
@@ -175,6 +176,9 @@ namespace PageOne.Singletons
 
             // 履歴の初期化
             HistoryManager.Instance.Init();
+
+            // カード効果の初期化
+            EffectManager.Instance.Init();
 
             // 捨て札の初期化
             grave = new Stack<Card>();
@@ -257,7 +261,7 @@ namespace PageOne.Singletons
                     {
                         turnPlayerIndex = (turnPlayerIndex + 1) % players.Count;
                     }
-                } while (hands[turnPlayerIndex].Cards.Count == 0);
+                } while (!maybeClearPlayers.Contains(turnPlayerIndex) && hands[turnPlayerIndex].Cards.Count == 0);
             }
             return false;
         }
@@ -314,6 +318,7 @@ namespace PageOne.Singletons
                 switch (EffectManager.Instance.Type)
                 {
                     case EffectType.Skip:
+                        EffectManager.Instance.Reset();
                         return;
                     case EffectType.Disclose:
                         for (int i = 0; i < 2; i++)
@@ -327,12 +332,10 @@ namespace PageOne.Singletons
                                 HistoryManager.Instance.Add(EventType.Disclose, c);
                             }
                         }
-                        EffectManager.Instance.Reset();
                         break;
                     case EffectType.Give:
                         hands[turnPlayerIndex].AddCard(EffectManager.Instance.GiftCard);
                         players[turnPlayerIndex].ReceiveAction(new Card(EffectManager.Instance.GiftCard));
-                        EffectManager.Instance.Reset();
                         break;
                     case EffectType.Draw:
                     case EffectType.QueenDraw:
@@ -350,9 +353,9 @@ namespace PageOne.Singletons
                             hands[turnPlayerIndex].AddCard(c);
                             HistoryManager.Instance.Add(EventType.Draw, null);
                         }
-                        EffectManager.Instance.Reset();
                         break;
                 }
+                EffectManager.Instance.Reset();
             }
 
             // まだカードを出していない場合はターン行動させる
@@ -414,6 +417,12 @@ namespace PageOne.Singletons
                 }
             }
             EffectManager.Instance.Update(card, giftCard);
+
+            // もし J を出して上がっていたならカード効果を消去する
+            if (card.Number == 11 && hands[turnPlayerIndex].Cards.Count == 0)
+            {
+                EffectManager.Instance.Reset();
+            }
 
             // ゲーム終了判定
             CheckClearPlayers();
@@ -566,16 +575,16 @@ namespace PageOne.Singletons
             {
                 // それ以外のときで手札が0枚になっているプレイヤーは上がり
                 // 先に手札を出し切っていた人の方が順位は上
-                foreach (var m in maybeClearPlayers)
+                foreach (var i in maybeClearPlayers)
                 {
-                    if (hands[m].Cards.Count == 0)
+                    if (hands[i].Cards.Count == 0)
                     {
-                        ranking[players[m].Name] = nextRank;
-                        players[m].ClearAction(nextRank);
+                        ranking[players[i].Name] = nextRank;
+                        players[i].ClearAction(nextRank);
                         nextRank++;
                     }
                 }
-                maybeClearPlayers = new List<int>();
+                maybeClearPlayers.Clear();
                 for (int i = 0; i < players.Count; i++)
                 {
                     if (!ranking.ContainsKey(players[i].Name) && hands[i].Cards.Count == 0)

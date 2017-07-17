@@ -20,7 +20,6 @@ namespace PageOne.Singletons
         private EffectManager()
         {
             Init();
-            Reversing = false;
         }
 
         #endregion
@@ -94,6 +93,18 @@ namespace PageOne.Singletons
         #region public メソッド
 
         /// <summary>
+        /// リバース以外の状態を初期化します。
+        /// </summary>
+        public void Init()
+        {
+            Type = EffectType.None;
+            DrawNum = 0;
+            CardTwoNum = 0;
+            GiftCard = null;
+            Reversing = false;
+        }
+
+        /// <summary>
         /// カード効果の処理後に呼ぶべきメソッドです。
         /// </summary>
         public void Reset()
@@ -104,7 +115,9 @@ namespace PageOne.Singletons
             }
             else
             {
+                var r = Reversing;
                 Init();
+                Reversing = r;
             }
         }
 
@@ -201,21 +214,6 @@ namespace PageOne.Singletons
                     return card.Number == 5;
             }
             return false;
-        }
-
-        #endregion
-
-        #region private メソッド
-
-        /// <summary>
-        /// リバース以外の状態を初期化します。
-        /// </summary>
-        private void Init()
-        {
-            Type = EffectType.None;
-            DrawNum = 0;
-            CardTwoNum = 0;
-            GiftCard = null;
         }
 
         #endregion
