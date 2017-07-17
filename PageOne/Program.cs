@@ -143,11 +143,11 @@ namespace PageOne
                     Console.Error.WriteLine("整数を入力してください。");
                     continue;
                 }
-                if (playerNum >= 2 && playerNum <= 7)
+                if (playerNum >= 1 && playerNum <= 7)
                 {
                     break;
                 }
-                Console.Error.WriteLine("2 人 ～ 7 人を入力してください。");
+                Console.Error.WriteLine("1 人 ～ 7 人を入力してください。");
             }
 
             // プレイヤー名の設定

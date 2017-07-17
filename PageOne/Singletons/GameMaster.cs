@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using PageOne.Exceptions;
 using PageOne.Models;
 using static PageOne.Models.Card;
 using static PageOne.Models.Event;
@@ -105,15 +106,6 @@ namespace PageOne.Singletons
             }
         }
 
-        /// <summary>全員の順位が決定してゲームが終了しているか。</summary>
-        private bool IsGameEnd
-        {
-            get
-            {
-                return ranking.Count == players.Count;
-            }
-        }
-
         #endregion
 
         #region public メソッド
@@ -191,7 +183,15 @@ namespace PageOne.Singletons
             // ゲームループ
             while (true)
             {
-                if (Next()) return ranking;
+                try
+                {
+                    if (Next()) return ranking;
+                }
+                catch (DrawNullException)
+                {
+                    CheckClearPlayers();
+                    return ranking;
+                }
             }
         }
 
@@ -239,18 +239,18 @@ namespace PageOne.Singletons
         {
             // ターン前処理
             BeforeTurnAction();
-            if (IsGameEnd) return true;
 
             // ターンアクション処理
             TurnAction(HistoryManager.Instance.TurnDiscard);
-            if (IsGameEnd) return true;
 
             // ターン後処理
             AfterTurnAction(HistoryManager.Instance.TurnDiscard);
-            if (IsGameEnd) return true;
 
             // 履歴処理
             HistoryManager.Instance.Next(turnPlayerIndex);
+
+            // ゲーム終了条件を満たしていたら終了
+            if (CheckClearPlayers()) return true;
 
             // ターン進行処理
             if (EffectManager.Instance.Type != EffectType.Quick)
@@ -303,7 +303,6 @@ namespace PageOne.Singletons
                 }
                 players[turnPlayerIndex].DiscardAction(hands[turnPlayerIndex].Cards[index]);
                 Discard(turnPlayerIndex, index);
-                if (IsGameEnd) return;
             }
         }
 
@@ -348,12 +347,6 @@ namespace PageOne.Singletons
                         for (int i = 0; i < EffectManager.Instance.DrawNum; i++)
                         {
                             var c = Draw();
-                            if (c == null)
-                            {
-                                // カードを引けなかったらゲーム終了
-                                CheckClearPlayers();
-                                return;
-                            }
                             hands[turnPlayerIndex].AddCard(c);
                             HistoryManager.Instance.Add(EventType.Draw, null);
                         }
@@ -370,12 +363,6 @@ namespace PageOne.Singletons
                 {
                     players[turnPlayerIndex].DrawAction(1);
                     var c = Draw();
-                    if (c == null)
-                    {
-                        // カードを引けなかったらゲーム終了
-                        CheckClearPlayers();
-                        return;
-                    }
                     hands[turnPlayerIndex].AddCard(c);
                     HistoryManager.Instance.Add(EventType.Draw, null);
                     index = players[turnPlayerIndex].TurnActionAfterDraw();
@@ -384,7 +371,6 @@ namespace PageOne.Singletons
                 {
                     players[turnPlayerIndex].DiscardAction(hands[turnPlayerIndex].Cards[index]);
                     Discard(turnPlayerIndex, index);
-                    if (IsGameEnd) return;
                 }
             }
         }
@@ -427,9 +413,6 @@ namespace PageOne.Singletons
             {
                 EffectManager.Instance.Reset();
             }
-
-            // ゲーム終了判定
-            CheckClearPlayers();
         }
 
         #endregion
@@ -448,7 +431,7 @@ namespace PageOne.Singletons
                 if (grave.Count <= 1)
                 {
                     // 捨て札が1枚以下の場合、ゲーム終了
-                    return null;
+                    throw new DrawNullException();
                 }
                 // 捨て札のトップ以外の捨て札を新たな山札とする
                 var top = TopOfGrave;
@@ -509,12 +492,6 @@ namespace PageOne.Singletons
                     for (int i = 0; i < 5; i++)
                     {
                         var c = Draw();
-                        if (c == null)
-                        {
-                            // カードを引けなかったらゲーム終了
-                            CheckClearPlayers();
-                            return;
-                        }
                         hands[playerIndex].AddCard(c);
                     }
                 }
